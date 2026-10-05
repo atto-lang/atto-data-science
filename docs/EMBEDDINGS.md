@@ -22,7 +22,8 @@ This keeps dense retrieval compatible with BLAS/GEMM-style execution and avoids 
 
 The initial native surface includes:
 
-- `mean_pool_token_embeddings_into` for mask-aware transformer hidden-state pooling;\n- `normalize_embedding_rows_into`;
+- `mean_pool_token_embeddings_into` for mask-aware transformer hidden-state pooling;
+- `normalize_embedding_rows_into`;
 - `dot_similarity_into`;
 - `cosine_similarity_into`;
 - `squared_l2_distance_into`;
@@ -35,7 +36,7 @@ For normalized embeddings, cosine ranking reduces to dot-product ranking. Applic
 
 ## Model-space identity
 
-Dimensions alone do not make two embeddings comparable. Batches carry `model_id` and `model_revision` so higher layers can reject accidental cross-model comparisons even when dimensions happen to match. Vector kernels remain deliberately model-agnostic; model-space policy belongs at the embedding-service boundary.
+Dimensions alone do not make two embeddings comparable. Batches carry non-empty `model_id` and `model_revision` values. Similarity and fused-retrieval kernels reject cross-model or cross-revision comparisons before mutating destination buffers, even when dimensions happen to match. Higher-level services may impose additional policy, but the low-level library does not silently compare incompatible embedding spaces.
 
 ## Backend contract
 
@@ -45,7 +46,9 @@ The interface is intentionally backend-neutral: ONNX, GGUF/native, device-specif
 
 ## Embedding generation pipeline
 
-`TokenEmbeddingBatch` represents padded transformer hidden states as one flat `[batch, tokens, hidden]` buffer plus a separate boolean attention mask. Mean pooling writes directly into the caller-owned `[batch, hidden]` embedding buffer; optional normalization is fused into that operation.\n\nThe target runtime pipeline is:
+`TokenEmbeddingBatch` represents padded transformer hidden states as one flat `[batch, tokens, hidden]` buffer plus a separate boolean attention mask. Mean pooling writes directly into the caller-owned `[batch, hidden]` embedding buffer; optional normalization is fused into that operation.
+
+The target runtime pipeline is:
 
 ```text
 text
