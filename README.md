@@ -10,10 +10,13 @@ The current compiler-facing implementation provides:
 
 - scalar math helpers and checked square root;
 - numerically stable Welford mean/variance reductions;
-- borrowed, allocation-free reductions such as `sum` and `dot`;
-- owned in-place vector transforms such as `scale`, `axpy`, and L2 normalization;
+- allocation-free reductions such as `sum` and `dot`;
+- explicitly mutable in-place vector transforms such as `scale`, `axpy`, and L2 normalization;
 - row-major `DenseMatrixF64` with caller-provided output buffers;
-- row-major `EmbeddingBatch` values with model/revision identity;\n- padded `TokenEmbeddingBatch` hidden states plus attention masks;\n- mask-aware mean pooling with optional fused L2 normalization;\n- a batch-first `EmbeddingBackend` contract with caller-owned output buffers;
+- row-major `EmbeddingBatch` values with model/revision identity;
+- padded `TokenEmbeddingBatch` hidden states plus attention masks;
+- mask-aware mean pooling with optional fused L2 normalization;
+- a batch-first `EmbeddingBackend` contract with caller-owned output buffers;
 - embedding row normalization plus batch dot, cosine, and squared-L2 kernels;
 - stable row-wise top-k selection;
 - fused dot + top-k retrieval without materializing a full query-by-corpus score matrix;
@@ -21,7 +24,9 @@ The current compiler-facing implementation provides:
 - allocation-conscious map/filter pipeline primitives;
 - Struct-of-Arrays point-cloud and particle data models.
 
-Current core `main` represents typed sequences as `List<T>`. Read-only kernels use explicit borrows of the concrete list type; `@Structural` is reserved for explicit shape-based compatibility when a callable intentionally accepts values across nominal representation categories. Owned mutable buffers are used for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
+Current core `main` represents typed sequences as `List<T>`. Oreslang object values are references and ordinary arguments pass the same managed reference/handle without copying the object or requiring address-of syntax. Userland Oreslang does **not** expose C/Rust-style pointer syntax: `&T`, `&value`, `&mut T`, raw `T*`, unary pointer dereference, and pointer arithmetic are not part of ordinary source code. (`*` remains the numeric multiplication operator.)
+
+Ownership and access changes are explicit semantic operations: `rt copy`, `rt borrow`, `rt take`, and `rt share`. Mutation authority is expressed with `mut`. `@Structural` remains a type-compatibility mechanism only. Mutable buffers remain a clean lowering boundary for future contiguous `Array<T>` storage, SIMD, and GPU/device execution.
 
 For embedding workloads, `List<float>` is explicitly the semantic reference representation, not the final hot-path layout. The performance target is aligned contiguous `Array<f32>` / `Array<f16>` / `Array<bf16>` storage with SIMD, multicore, and accelerator lowering.
 
