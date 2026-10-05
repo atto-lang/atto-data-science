@@ -47,6 +47,19 @@ fnc count_int_values(List<int> values): int {
   return count;
 }
 
+fnc same_embedding_space(
+  EmbeddingBatch left,
+  EmbeddingBatch right
+): bool {
+  if left.model_id != right.model_id; do
+    return false;
+  fi
+  if left.model_revision != right.model_revision; do
+    return false;
+  fi
+  return true;
+}
+
 pub fnc validate_embedding_batch(
   EmbeddingBatch batch
 ): Result<bool, String> {
@@ -56,6 +69,12 @@ pub fnc validate_embedding_batch(
 
   if batch.dimensions <= 0; do
     return Err("embedding dimensions must be positive");
+  fi
+  if batch.model_id == ""; do
+    return Err("embedding model id must be non-empty");
+  fi
+  if batch.model_revision == ""; do
+    return Err("embedding model revision must be non-empty");
   fi
 
   if count_float_values(batch.values) != batch.rows * batch.dimensions; do
@@ -76,6 +95,12 @@ pub fnc validate_token_embedding_batch(
   fi
   if batch.dimensions <= 0; do
     return Err("token embedding dimensions must be positive");
+  fi
+  if batch.model_id == ""; do
+    return Err("token embedding model id must be non-empty");
+  fi
+  if batch.model_revision == ""; do
+    return Err("token embedding model revision must be non-empty");
   fi
 
   if count_float_values(batch.values) !=
@@ -289,6 +314,18 @@ pub fnc dot_similarity_into(
     return Err("invalid corpus embedding batch");
   fi
 
+  if !same_embedding_space(queries, corpus); do
+    return Err("embedding batches must use the same model id and revision");
+  fi
+  if !same_embedding_space(queries, corpus); do
+    return Err("embedding batches must use the same model id and revision");
+  fi
+  if !same_embedding_space(queries, corpus); do
+    return Err("embedding batches must use the same model id and revision");
+  fi
+  if !same_embedding_space(queries, corpus); do
+    return Err("embedding batches must use the same model id and revision");
+  fi
   if queries.dimensions != corpus.dimensions; do
     return Err("embedding batches must have equal dimensions");
   fi
@@ -625,6 +662,9 @@ pub fnc top_k_dot_into(
   fi
   if count_float_values(top_scores) != queries.rows * k; do
     return Err("top-k score output length must equal query rows * k");
+  fi
+  if k == 0; do
+    return Ok(true);
   fi
 
   let int query_row = 0;
