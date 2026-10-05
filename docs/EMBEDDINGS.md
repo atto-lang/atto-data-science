@@ -1,0 +1,80 @@
+# Embeddings and vector retrieval
+
+## Goal
+
+Embedding generation and retrieval are first-class data-oriented Oreslang workloads. The public surface is batch-first, row-major, allocation-conscious, and designed so the semantic Oreslang implementation can later lower to SIMD, multicore, or GPU kernels without changing caller code.
+
+## Storage contract
+
+`EmbeddingBatch` stores the row count, embedding dimension, one flat row-major numeric buffer, normalization state, model identifier, and model revision.
+
+Current core `main` uses `List<float>` as the semantic storage primitive. The intended hot representation is contiguous `Array<f32>` with known alignment and shape metadata:
+
+```text
+[row0_dim0, row0_dim1, ... row0_dimD,
+ row1_dim0, row1_dim1, ... row1_dimD,
+ ...]
+```
+
+This keeps dense retrieval compatible with BLAS/GEMM-style execution and avoids object-per-vector layouts.
+
+## Batch-first kernels
+
+The initial native surface includes:
+
+- `normalize_embedding_rows_into`;
+- `dot_similarity_into`;
+- `cosine_similarity_into`;
+- `squared_l2_distance_into`;
+- `top_k_indices_into`;
+- `top_k_dot_into`.
+
+All hot kernels accept caller-owned destination buffers. `top_k_dot_into` is particularly important for retrieval because it computes and ranks scores without allocating the full `[queries, corpus]` score matrix.
+
+For normalized embeddings, cosine ranking reduces to dot-product ranking. Applications should normalize once after model pooling and use dot/top-k for repeated retrieval.
+
+## Model-space identity
+
+Dimensions alone do not make two embeddings comparable. Batches carry `model_id` and `model_revision` so higher layers can reject accidental cross-model comparisons even when dimensions happen to match. Vector kernels remain deliberately model-agnostic; model-space policy belongs at the embedding-service boundary.
+
+## Embedding generation pipeline
+
+The target runtime pipeline is:
+
+```text
+text
+  -> tokenizer
+  -> microbatch builder
+  -> model inference
+  -> pooling
+  -> row normalization
+  -> EmbeddingBatch
+  -> dot / top-k / vector database
+```
+
+The model/session should be actor-owned. Concurrent callers send requests to a resident embedding worker; the worker may coalesce mailbox requests into a microbatch and resolve per-request Futures after inference. This keeps model state isolated and makes batching a runtime optimization rather than a burden on every caller.
+
+Cancellation must remove queued requests immediately. Backend/device cancellation should be used when available for a running batch whose work is no longer needed.
+
+## Compiler/runtime lowering
+
+The pure Oreslang kernels are the semantic reference. Optimized compilation may recognize stable kernel shapes and select scalar reference code, vectorized CPU code, cache-aware multicore chunks, or accelerator/device kernels.
+
+Important specialization dimensions include dtype, embedding dimension, row count/batch size, normalization state, and residency. Common dimensions such as 384, 512, 768, 1024, 1536, 2048, 3072, and 4096 are good AOT specialization targets without restricting arbitrary dimensions.
+
+The contiguous-array runtime should eventually support:
+
+- aligned `f32`, `f16`, and `bf16` storage;
+- zero-copy slices/views;
+- explicit host/device residency;
+- pinned transfer buffers where useful;
+- caller-owned reusable destination buffers;
+- fused pooling + normalization;
+- fused dot + top-k;
+- quantized storage/search paths such as int8 where error budgets allow it.
+
+## Benchmark gates
+
+Embedding work should be measured using vectors/second for dot, cosine, normalize, and top-k; texts/second and tokens/second for model inference; p50/p95 latency; allocations per request; bytes copied; host/device transfer bytes; CPU/GPU utilization; and achieved batch occupancy.
+
+Warm inference and cold model startup are separate benchmarks.
