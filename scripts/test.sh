@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
+./scripts/verify-source-invariants.sh
+
 run_suites() {
   bin="$1"
   "$bin" tests/main.ores
