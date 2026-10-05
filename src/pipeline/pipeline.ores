@@ -1,57 +1,59 @@
-// Small functional pipeline kernel. Stages operate on contiguous arrays,
-// making later fusion/SIMD/GPU lowering possible without changing user code.
+// Allocation-conscious pipeline primitives.
+//
+// Current Oreslang main does not yet expose a resizable native typed Array API,
+// so hot-path transforms mutate owned buffers or write into caller-provided
+// destination buffers. This maps cleanly to future Array/SIMD/GPU lowering.
 
-pub fnc map_values(Array<float> input, (float) => float mapper) -> Array<float> {
-  var Array<float> output = new Array<float>();
-  for value of input {
-    output.push(mapper(value));
-  }
-  return output;
+type FloatMapper = (float) => float;
+type FloatPredicate = (float) => bool;
+
+define class CompactedF64 as
+  pub val List<float> values;
+  pub val int count;
+end
+
+fnc count_float_values(&List<float> values): int {
+  let int count = 0;
+  for value of values do
+    count = count + 1;
+  done
+  return count;
 }
 
-pub fnc filter_values(Array<float> input, (float) => bool predicate) -> Array<float> {
-  var Array<float> output = new Array<float>();
-  for value of input {
-    if predicate(value) {
-      output.push(value);
-    }
-  }
-  return output;
+pub fnc map_values(
+  List<float> mut input,
+  FloatMapper mapper
+): List<float> {
+  let int i = 0;
+  for value of input do
+    input[i] = mapper(value);
+    i = i + 1;
+  done
+
+  return input;
 }
 
-pub fnc run_pipeline(
-  Array<float> input,
-  Array<(Array<float>) => Array<float>> stages
-) -> Array<float> {
-  var Array<float> current = input;
+// Compacts matching values into the prefix of an existing output buffer.
+// CompactedF64.count identifies the valid prefix length.
+pub fnc filter_values_into(
+  &List<float> input,
+  List<float> mut output,
+  FloatPredicate predicate
+): Result<CompactedF64, String> {
+  val int input_count = count_float_values(input);
+  val int output_count = count_float_values(&output);
 
-  for stage of stages {
-    current = stage(current);
-  }
+  if output_count < input_count; do
+    return Err("filter output buffer must be at least input length");
+  fi
 
-  return current;
-}
+  let int write_index = 0;
+  for value of input do
+    if predicate(value); do
+      output[write_index] = value;
+      write_index = write_index + 1;
+    fi
+  done
 
-pub fnc chunk(Array<float> input, int batch_size) -> Result<Array<Array<float>>, String> {
-  if batch_size <= 0 {
-    return Err("batch_size must be positive");
-  }
-
-  var Array<Array<float>> batches = new Array<Array<float>>();
-  var Array<float> current = new Array<float>();
-
-  for value of input {
-    current.push(value);
-
-    if current.length == batch_size {
-      batches.push(current);
-      current = new Array<float>();
-    }
-  }
-
-  if current.length > 0 {
-    batches.push(current);
-  }
-
-  return Ok(batches);
+  return Ok(new CompactedF64(output, write_index));
 }

@@ -1,73 +1,111 @@
 // Data-Oriented Programming primitives.
-// These structs contain data only; systems stay as free functions.
+// These classes are data-only nominal containers on current core main.
+// Systems remain free functions and storage stays Struct-of-Arrays.
 
-define struct PointCloud3F64 as
-  Array<float> x;
-  Array<float> y;
-  Array<float> z;
+define class PointCloud3F64 as
+  pub val List<float> x;
+  pub val List<float> y;
+  pub val List<float> z;
 end
 
-define struct ParticleSetF64 as
-  Array<float> x;
-  Array<float> y;
-  Array<float> z;
-  Array<float> vx;
-  Array<float> vy;
-  Array<float> vz;
-  Array<float> mass;
+define class ParticleSetF64 as
+  pub val List<float> x;
+  pub val List<float> y;
+  pub val List<float> z;
+  pub val List<float> vx;
+  pub val List<float> vy;
+  pub val List<float> vz;
+  pub val List<float> mass;
 end
 
-pub fnc validate_point_cloud(PointCloud3F64 points) -> Result<bool, String> {
-  if points.x.length != points.y.length || points.x.length != points.z.length {
+fnc count_values(&List<float> values): int {
+  let int count = 0;
+  for value of values do
+    count = count + 1;
+  done
+  return count;
+}
+
+pub fnc validate_point_cloud(&PointCloud3F64 points): Result<bool, String> {
+  val int count = count_values(&points.x);
+
+  if count_values(&points.y) != count; do
     return Err("point-cloud SoA columns must have equal length");
-  }
+  fi
+
+  if count_values(&points.z) != count; do
+    return Err("point-cloud SoA columns must have equal length");
+  fi
+
   return Ok(true);
 }
 
-pub fnc validate_particles(ParticleSetF64 particles) -> Result<bool, String> {
-  let int count = particles.x.length;
+pub fnc validate_particles(&ParticleSetF64 particles): Result<bool, String> {
+  val int count = count_values(&particles.x);
 
-  if particles.y.length != count ||
-     particles.z.length != count ||
-     particles.vx.length != count ||
-     particles.vy.length != count ||
-     particles.vz.length != count ||
-     particles.mass.length != count {
+  if count_values(&particles.y) != count; do
     return Err("particle SoA columns must have equal length");
-  }
+  fi
+  if count_values(&particles.z) != count; do
+    return Err("particle SoA columns must have equal length");
+  fi
+  if count_values(&particles.vx) != count; do
+    return Err("particle SoA columns must have equal length");
+  fi
+  if count_values(&particles.vy) != count; do
+    return Err("particle SoA columns must have equal length");
+  fi
+  if count_values(&particles.vz) != count; do
+    return Err("particle SoA columns must have equal length");
+  fi
+  if count_values(&particles.mass) != count; do
+    return Err("particle SoA columns must have equal length");
+  fi
 
   return Ok(true);
 }
 
-pub fnc squared_magnitude(PointCloud3F64 points) -> Result<Array<float>, String> {
-  validate_point_cloud(points)?;
+pub fnc squared_magnitude_into(
+  &PointCloud3F64 points,
+  List<float> mut output
+): Result<List<float>, String> {
+  val Result<bool, String> valid_points = validate_point_cloud(points);
+  if valid_points.is_err(); do
+    return Err("invalid point cloud");
+  fi
 
-  var Array<float> output = new Array<float>();
-  var int i = 0;
+  val int point_count = count_values(&points.x);
+  if count_values(&output) != point_count; do
+    return Err("output length must equal point count");
+  fi
 
-  for x of points.x {
-    let float y = points.y[i];
-    let float z = points.z[i];
-    output.push((x * x) + (y * y) + (z * z));
-    i += 1;
-  }
+  let int i = 0;
+  for x of points.x do
+    val float y = points.y[i];
+    val float z = points.z[i];
+    output[i] = (x * x) + (y * y) + (z * z);
+    i = i + 1;
+  done
 
   return Ok(output);
 }
 
-pub fnc kinetic_energy(ParticleSetF64 particles) -> Result<float, String> {
-  validate_particles(particles)?;
+pub fnc kinetic_energy(&ParticleSetF64 particles): Result<float, String> {
+  val Result<bool, String> valid_particles = validate_particles(particles);
+  if valid_particles.is_err(); do
+    return Err("invalid particle set");
+  fi
 
-  var float energy = 0.0;
-  var int i = 0;
+  let float energy = 0.0;
+  let int i = 0;
 
-  for vx of particles.vx {
-    let float vy = particles.vy[i];
-    let float vz = particles.vz[i];
-    let float mass = particles.mass[i];
-    energy += 0.5 * mass * ((vx * vx) + (vy * vy) + (vz * vz));
-    i += 1;
-  }
+  for vx of particles.vx do
+    val float vy = particles.vy[i];
+    val float vz = particles.vz[i];
+    val float mass = particles.mass[i];
+    energy = energy + (0.5 * mass * ((vx * vx) + (vy * vy) + (vz * vz)));
+    i = i + 1;
+  done
 
   return Ok(energy);
 }

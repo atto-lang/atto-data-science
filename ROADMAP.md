@@ -1,26 +1,26 @@
 # Roadmap
 
-The target is not a thin Python compatibility layer. The target is an Oreslang-native stack that can cover the common NumPy + pandas/Polars + SciPy + scikit-learn workflow while exploiting Oreslang's runtime model.
+The target is not a thin Python compatibility layer. The target is an Oreslang-native stack covering the common NumPy + pandas/Polars + SciPy + scikit-learn workflow while exploiting Oreslang's runtime model.
 
 ## P0 — native numerical/data core
 
 - [x] scalar math helpers;
 - [x] stable mean/variance reductions;
-- [x] dot, scale, hadamard, axpy, L2 normalization;
-- [x] contiguous row-major dense matrix;
-- [x] typed float columns + validity masks;
-- [x] float frame validation and reductions;
-- [x] eager map/filter/chunk pipelines;
+- [x] dot, scale, Hadamard, AXPY, L2 normalization;
+- [x] row-major dense matrix with destination-buffer matvec;
+- [x] typed nullable float columns;
+- [x] eager map/filter buffer kernels;
 - [x] Struct-of-Arrays point/particle examples;
-- [ ] native test runner coverage once the current compiler test harness is exposed to this repo;
+- [x] native Oreslang test suite using the core test framework;
 - [ ] benchmark harness against equivalent Python/NumPy/Polars operations.
 
 ## P1 — ndarray and dataframe semantics
 
-- n-dimensional typed arrays with shape/stride metadata;
+- dedicated contiguous typed `Array<T>`;
+- n-dimensional arrays with shape/stride metadata;
 - zero-copy views and slicing;
 - broadcasting;
-- typed nullable columns with bit-packed validity masks;
+- bit-packed validity masks;
 - heterogeneous DataFrame schema;
 - select/filter/with_column/group_by/aggregate/join/sort;
 - lazy logical plans and expression trees;

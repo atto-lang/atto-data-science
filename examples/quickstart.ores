@@ -1,18 +1,26 @@
-import { mean, variance_sample } from "../src/math/reductions.ores";
-import { scale, normalize_l2 } from "../src/math/vector.ores";
+import fnc mean, variance_sample from '../src/math/reductions';
+import fnc scale, normalize_l2 from '../src/math/vector';
 
-pub fnc main() -> Result<void, String> {
-  let Array<float> xs = new Array<float>(1.0, 2.0, 3.0, 4.0);
+pub routine main(): void {
+  val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
+  val List<float> doubled = scale(values, 2.0);
 
-  let Array<float> doubled = scale(xs, 2.0);
-  let float avg = mean(doubled)?;
-  let float variance = variance_sample(doubled)?;
-  let Array<float> unit = normalize_l2(doubled)?;
+  val Result<float, String> average = mean(&doubled);
+  val Result<float, String> variance = variance_sample(&doubled);
 
-  // Expected: avg=5, sample variance=6.666..., unit.length=4.
-  print(avg);
-  print(variance);
-  print(unit.length);
+  stdio.stdout.write("mean=");
+  stdio.stdout.println(average.expect("mean failed"));
+  stdio.stdout.write("sample_variance=");
+  stdio.stdout.println(variance.expect("variance failed"));
 
-  return Ok();
+  val Result<List<float>, String> unit_result = normalize_l2(doubled);
+  val List<float> unit = unit_result.expect("normalization failed");
+
+  stdio.stdout.write("unit=");
+  for value of unit do
+    stdio.stdout.write(value);
+    stdio.stdout.write(" ");
+  done
+  stdio.stdout.println("");
+  return;
 }

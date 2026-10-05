@@ -1,44 +1,44 @@
 # oreslang-data-science
 
-Native Oreslang libraries for numerical computing, columnar data, statistics, data pipelines, and data-oriented programming.
+Native Oreslang libraries for numerical computing, columnar data, data pipelines, and data-oriented programming.
 
-The core library is intentionally implemented in **Oreslang**, not Java. The long-term target is a fast, ergonomic data-science stack with NumPy/pandas/Polars-class workflows while preserving Oreslang's scheduler, ownership, AOT, actor isolation, and heterogeneous CPU/GPU design.
+The core library is intentionally implemented in **Oreslang**, not Java. The target is Python-class ergonomics with a data-oriented execution model that can grow toward NumPy/Polars-class numeric and columnar performance while preserving Oreslang ownership, AOT, actor isolation, scheduler semantics, and CPU/GPU placement.
 
-## Initial native core
+## Native core
 
-This first slice provides:
+The current compiler-facing implementation provides:
 
 - scalar math helpers and checked square root;
-- numerically stable reductions using Welford accumulation;
-- dense vector transforms and BLAS-style operations such as `dot` and `axpy`;
-- a contiguous row-major `DenseMatrixF64`;
-- columnar `FloatColumn` / `FloatFrame` data structures;
-- composable functional pipelines for map/filter/batching;
-- Struct-of-Arrays data structures for data-oriented workloads.
+- numerically stable Welford mean/variance reductions;
+- borrowed, allocation-free reductions such as `sum` and `dot`;
+- owned in-place vector transforms such as `scale`, `axpy`, and L2 normalization;
+- row-major `DenseMatrixF64` with caller-provided output buffers;
+- nullable columnar `FloatColumn` and `FloatFrame`;
+- allocation-conscious map/filter pipeline primitives;
+- Struct-of-Arrays point-cloud and particle data models.
 
-All hot-path data is represented as typed `Array<float>` columns instead of boxed row objects.
+Current core `main` represents typed sequences as `List<T>`. The library deliberately uses borrows for read-only kernels and owned mutable buffers for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
 
 ## Example
 
 ```ores
-import { mean, variance_sample } from "./src/math/reductions.ores";
-import { scale } from "./src/math/vector.ores";
+import fnc mean from './src/math/reductions';
+import fnc scale from './src/math/vector';
 
-let Array<float> xs = new Array<float>(1.0, 2.0, 3.0, 4.0);
-let Array<float> doubled = scale(xs, 2.0);
-
-let avg = mean(doubled)?;
-let variance = variance_sample(doubled)?;
+val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
+val List<float> doubled = scale(values, 2.0);
+val Result<float, String> average = mean(&doubled);
+stdio.stdout.println(average.expect("mean failed"));
 ```
 
-## Design direction
+## Native tests
 
-The project is intentionally layered:
+The repository uses the Oreslang-native framework from core PR #233. A pinned copy is kept at `vendor/oreslang/testing.ores` so tests need no Java/JUnit dependency and no cross-repository token.
 
-1. **math** — scalar math, reductions, dense vectors, matrices;
-2. **data** — typed columns, frames, validity masks, chunked batches;
-3. **pipeline** — composable transforms over contiguous batches;
-4. **dop** — SoA/archetype-friendly layouts for cache-local processing;
-5. later: CSV/Arrow/Parquet, lazy query plans, SIMD kernels, GPU placement, statistics, ML, visualization, and interop.
+```sh
+ORESLANG_BIN=/path/to/oreslang ./scripts/test.sh
+```
+
+The suite in `tests/main.ores` currently covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, and SoA particle energy.
 
 See [Architecture](docs/ARCHITECTURE.md) and [Roadmap](ROADMAP.md).

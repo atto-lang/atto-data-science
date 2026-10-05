@@ -4,52 +4,50 @@
 
 Make data science a first-class Oreslang workload instead of wrapping a Java or Python implementation.
 
-The public API should feel concise enough for notebook-style exploration while the storage/execution model remains friendly to AOT compilation, CPU caches, vectorization, parallel scheduling, and eventually GPU placement.
+The public API should remain concise enough for exploratory work while the storage/execution model stays friendly to AOT compilation, CPU caches, vectorization, parallel scheduling, and GPU placement.
 
 ## Principles
 
 ### Native Oreslang userland
 
-Core algorithms live in `.ores` files. Java is not the implementation language for the data-science library. Runtime intrinsics are allowed later as compiler/runtime optimizations, but they must preserve the same Oreslang API and semantics.
+Core algorithms and tests live in `.ores` files. Java is not the implementation language for this library. Runtime/compiler intrinsics may later optimize recognized kernels while preserving the Oreslang reference semantics.
+
+### Borrow for reads, own writes
+
+Reductions accept read-only borrows such as `&List<float>`; transforms take ownership of mutable buffers and return them. Matrix, filtering, and SoA kernels accept caller-provided destination buffers rather than requiring hidden allocation.
+
+This is both ownership-safe and a good lowering boundary for a future native contiguous `Array<T>`.
 
 ### Columnar by default
 
-Rows are convenient at boundaries; columns are the execution representation. Typed columns use contiguous arrays plus validity metadata. This allows reductions and transforms to walk dense memory instead of chasing object references.
+Rows are convenient at boundaries; columns are the execution representation. Nullable columns store values separately from validity metadata, so reductions scan dense numeric buffers rather than boxed row objects.
 
 ### Data-oriented layouts
 
-Performance-sensitive multi-field data uses Struct-of-Arrays layouts. Components remain data-only and systems are free functions. This matches the wider Oreslang ECS/DOP direction and gives the compiler analyzable read/write sets.
+Performance-sensitive multi-field data uses Struct-of-Arrays layouts. Current core `main` expresses these as data-only classes; behavior remains in free systems/functions. Once source-level structs are finalized, the container syntax can migrate without changing the DOP layout.
 
 ### Batch pipelines
 
-Pipelines operate on arrays and batches, not individual boxed records. The first implementation is eager and simple. The API is designed so later compiler/library work can fuse adjacent maps/filters, choose chunk sizes, vectorize kernels, or place work on CPU/GPU without rewriting user programs.
+Pipelines operate on typed buffers rather than boxed records. The current implementation favors in-place map and destination-buffer compaction. Later compiler/library work can fuse adjacent kernels, vectorize, choose chunk sizes, and place work on CPU/GPU.
 
 ### Explicit errors
 
-Shape mismatches, empty reductions, invalid frames, and invalid numeric domains return `Result<T,E>`. Data-science code should not silently invent dimensions or coerce malformed inputs.
+Shape mismatches, empty reductions, invalid frames, invalid numeric domains, and undersized destination buffers return `Result<T,E>`.
 
-## Layers
+## Native testing
 
-- `src/math/scalar.ores`: scalar primitives.
-- `src/math/reductions.ores`: stable reductions.
-- `src/math/vector.ores`: vector transforms and BLAS-style primitives.
-- `src/math/matrix.ores`: contiguous dense matrix foundation.
-- `src/data/columnar.ores`: typed columns and frames.
-- `src/pipeline/pipeline.ores`: composable array/batch stages.
-- `src/dop/soa.ores`: explicit SoA types and systems.
+`tests/main.ores` uses the core native testing framework, pinned under `vendor/oreslang/testing.ores`. Tests are ordinary Oreslang code and emit the stable `ORES_TEST|...` event protocol.
 
 ## Performance direction
 
-The important future optimization boundary is not “call Java.” It is “recognize Oreslang kernels.”
-
 Candidate compiler/runtime intrinsics can specialize:
 
-- reduction loops;
+- Welford reductions;
 - dot/axpy/matvec;
 - validity-mask scans;
 - map/filter fusion;
 - chunked parallel execution;
 - SIMD;
-- GPU task placement when effects/data access make that safe.
+- GPU task placement when data/effects make that safe.
 
 The pure Oreslang implementation remains the semantic reference.

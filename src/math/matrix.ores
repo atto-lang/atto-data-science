@@ -1,68 +1,108 @@
-import { dot } from "./reductions.ores";
-
-define struct DenseMatrixF64 as
-  int rows;
-  int cols;
-  Array<float> values;
+define class DenseMatrixF64 as
+  pub val int rows;
+  pub val int cols;
+  pub val List<float> values;
 end
 
-pub fnc validate_matrix(DenseMatrixF64 matrix) -> Result<bool, String> {
-  if matrix.rows < 0 || matrix.cols < 0 {
-    return Err("matrix dimensions must be non-negative");
-  }
+fnc count_values(&List<float> values): int {
+  let int count = 0;
+  for value of values do
+    count = count + 1;
+  done
+  return count;
+}
 
-  if matrix.values.length != matrix.rows * matrix.cols {
+pub fnc validate_matrix(&DenseMatrixF64 matrix): Result<bool, String> {
+  if matrix.rows < 0; do
+    return Err("matrix row count must be non-negative");
+  fi
+
+  if matrix.cols < 0; do
+    return Err("matrix column count must be non-negative");
+  fi
+
+  if count_values(&matrix.values) != matrix.rows * matrix.cols; do
     return Err("matrix storage length does not match rows * cols");
-  }
+  fi
 
   return Ok(true);
 }
 
-pub fnc matrix_index(DenseMatrixF64 matrix, int row, int col) -> Result<int, String> {
-  if row < 0 || row >= matrix.rows {
+pub fnc matrix_index(
+  &DenseMatrixF64 matrix,
+  int row,
+  int col
+): Result<int, String> {
+  if row < 0; do
     return Err("row index out of bounds");
-  }
-  if col < 0 || col >= matrix.cols {
+  fi
+  if row >= matrix.rows; do
+    return Err("row index out of bounds");
+  fi
+  if col < 0; do
     return Err("column index out of bounds");
-  }
+  fi
+  if col >= matrix.cols; do
+    return Err("column index out of bounds");
+  fi
+
   return Ok((row * matrix.cols) + col);
 }
 
-pub fnc matrix_get(DenseMatrixF64 matrix, int row, int col) -> Result<float, String> {
-  let int index = matrix_index(matrix, row, col)?;
-  return Ok(matrix.values[index]);
+pub fnc matrix_get(
+  &DenseMatrixF64 matrix,
+  int row,
+  int col
+): Result<float, String> {
+  val Result<int, String> index_result = matrix_index(matrix, row, col);
+  if index_result.is_err(); do
+    return Err("matrix index out of bounds");
+  fi
+
+  return Ok(matrix.values[index_result.unwrap()]);
 }
 
-pub fnc matvec(DenseMatrixF64 matrix, Array<float> vector) -> Result<Array<float>, String> {
-  validate_matrix(matrix)?;
+// Allocation-free matrix-vector multiplication. The caller owns the output
+// buffer, which is reused in place and returned on success.
+pub fnc matvec_into(
+  &DenseMatrixF64 matrix,
+  &List<float> vector,
+  List<float> mut output
+): Result<List<float>, String> {
+  val Result<bool, String> matrix_ok = validate_matrix(matrix);
+  if matrix_ok.is_err(); do
+    return Err("invalid matrix");
+  fi
 
-  if vector.length != matrix.cols {
+  if count_values(vector) != matrix.cols; do
     return Err("matvec vector length must equal matrix column count");
-  }
+  fi
 
-  var Array<float> out = new Array<float>();
-  var int row = 0;
+  if count_values(&output) != matrix.rows; do
+    return Err("matvec output buffer length must equal matrix row count");
+  fi
 
+  let int row = 0;
   loop {
-    if row >= matrix.rows {
+    if row >= matrix.rows; do
       break;
-    }
+    fi
 
-    var float total = 0.0;
-    var int col = 0;
-
+    let float total = 0.0;
+    let int col = 0;
     loop {
-      if col >= matrix.cols {
+      if col >= matrix.cols; do
         break;
-      }
-      let int index = (row * matrix.cols) + col;
-      total += matrix.values[index] * vector[col];
-      col += 1;
+      fi
+
+      val int index = (row * matrix.cols) + col;
+      total = total + (matrix.values[index] * vector[col]);
+      col = col + 1;
     }
 
-    out.push(total);
-    row += 1;
+    output[row] = total;
+    row = row + 1;
   }
 
-  return Ok(out);
+  return Ok(output);
 }

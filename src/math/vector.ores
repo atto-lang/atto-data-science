@@ -1,82 +1,133 @@
-import { sqrt } from "./scalar.ores";
-import { dot } from "./reductions.ores";
+import fnc sqrt from './scalar';
+import fnc dot from './reductions';
 
-pub fnc map_float(Array<float> values, (float) => float mapper) -> Array<float> {
-  var Array<float> out = new Array<float>();
-  for value of values {
-    out.push(mapper(value));
-  }
-  return out;
+type FloatMapper = (float) => float;
+
+pub fnc map_float(List<float> mut values, FloatMapper mapper): List<float> {
+  let int i = 0;
+  for value of values do
+    values[i] = mapper(value);
+    i = i + 1;
+  done
+  return values;
 }
 
-pub fnc filter_float(Array<float> values, (float) => bool predicate) -> Array<float> {
-  var Array<float> out = new Array<float>();
-  for value of values {
-    if predicate(value) {
-      out.push(value);
-    }
-  }
-  return out;
+pub fnc scale(List<float> mut values, float factor): List<float> {
+  let int i = 0;
+  for value of values do
+    values[i] = value * factor;
+    i = i + 1;
+  done
+  return values;
 }
 
-pub fnc scale(Array<float> values, float factor) -> Array<float> {
-  var Array<float> out = new Array<float>();
-  for value of values {
-    out.push(value * factor);
-  }
-  return out;
+pub fnc add(
+  List<float> mut left,
+  &List<float> right
+): Result<List<float>, String> {
+  let int left_count = 0;
+  let int right_count = 0;
+
+  for value of left do
+    left_count = left_count + 1;
+  done
+
+  for value of right do
+    right_count = right_count + 1;
+  done
+
+  if left_count != right_count; do
+    return Err("add requires vectors with equal length");
+  fi
+
+  let int i = 0;
+  for value of left do
+    left[i] = value + right[i];
+    i = i + 1;
+  done
+
+  return Ok(left);
 }
 
-pub fnc add(Array<float> left, Array<float> right) -> Result<Array<float>, String> {
-  if left.length != right.length {
-    return Err("add requires arrays with equal length");
-  }
+pub fnc hadamard(
+  List<float> mut left,
+  &List<float> right
+): Result<List<float>, String> {
+  let int left_count = 0;
+  let int right_count = 0;
 
-  var Array<float> out = new Array<float>();
-  var int i = 0;
-  for value of left {
-    out.push(value + right[i]);
-    i += 1;
-  }
-  return Ok(out);
+  for value of left do
+    left_count = left_count + 1;
+  done
+
+  for value of right do
+    right_count = right_count + 1;
+  done
+
+  if left_count != right_count; do
+    return Err("hadamard requires vectors with equal length");
+  fi
+
+  let int i = 0;
+  for value of left do
+    left[i] = value * right[i];
+    i = i + 1;
+  done
+
+  return Ok(left);
 }
 
-pub fnc hadamard(Array<float> left, Array<float> right) -> Result<Array<float>, String> {
-  if left.length != right.length {
-    return Err("hadamard requires arrays with equal length");
-  }
+// BLAS-style y <- a*x + y.
+pub fnc axpy(
+  float a,
+  &List<float> x,
+  List<float> mut y
+): Result<List<float>, String> {
+  let int x_count = 0;
+  let int y_count = 0;
 
-  var Array<float> out = new Array<float>();
-  var int i = 0;
-  for value of left {
-    out.push(value * right[i]);
-    i += 1;
-  }
-  return Ok(out);
+  for value of x do
+    x_count = x_count + 1;
+  done
+
+  for value of y do
+    y_count = y_count + 1;
+  done
+
+  if x_count != y_count; do
+    return Err("axpy requires vectors with equal length");
+  fi
+
+  let int i = 0;
+  for value of y do
+    y[i] = (a * x[i]) + value;
+    i = i + 1;
+  done
+
+  return Ok(y);
 }
 
-// BLAS-style y + a*x primitive.
-pub fnc axpy(float a, Array<float> x, Array<float> y) -> Result<Array<float>, String> {
-  if x.length != y.length {
-    return Err("axpy requires arrays with equal length");
-  }
+pub fnc normalize_l2(List<float> mut values): Result<List<float>, String> {
+  val Result<float, String> squared_result = dot(&values, &values);
+  if squared_result.is_err(); do
+    return Err("failed to compute vector norm");
+  fi
 
-  var Array<float> out = new Array<float>();
-  var int i = 0;
-  for value of x {
-    out.push((a * value) + y[i]);
-    i += 1;
-  }
-  return Ok(out);
-}
+  val Result<float, String> norm_result = sqrt(squared_result.unwrap());
+  if norm_result.is_err(); do
+    return Err("failed to compute vector norm");
+  fi
 
-pub fnc normalize_l2(Array<float> values) -> Result<Array<float>, String> {
-  let float norm_squared = dot(values, values)?;
-  let float norm = sqrt(norm_squared)?;
-
-  if norm == 0.0 {
+  val float norm = norm_result.unwrap();
+  if norm == 0.0; do
     return Err("cannot normalize the zero vector");
-  }
+  fi
 
-  return Ok(scale(values, 1.0 / norm));
+  let int i = 0;
+  for value of values do
+    values[i] = value / norm;
+    i = i + 1;
+  done
+
+  return Ok(values);
 }
