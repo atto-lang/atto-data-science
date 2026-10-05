@@ -5,7 +5,7 @@ type FloatMapper = (float) => float;
 
 pub fnc map_float(List<float> mut values, FloatMapper mapper): List<float> {
   let int i = 0;
-  for value of values do
+  for const value of values do
     values[i] = mapper(value);
     i = i + 1;
   done
@@ -14,7 +14,7 @@ pub fnc map_float(List<float> mut values, FloatMapper mapper): List<float> {
 
 pub fnc scale(List<float> mut values, float factor): List<float> {
   let int i = 0;
-  for value of values do
+  for const value of values do
     values[i] = value * factor;
     i = i + 1;
   done
@@ -28,11 +28,11 @@ pub fnc add(
   let int left_count = 0;
   let int right_count = 0;
 
-  for value of left do
+  for const value of left do
     left_count = left_count + 1;
   done
 
-  for value of right do
+  for const value of right do
     right_count = right_count + 1;
   done
 
@@ -41,7 +41,7 @@ pub fnc add(
   fi
 
   let int i = 0;
-  for value of left do
+  for const value of left do
     left[i] = value + right[i];
     i = i + 1;
   done
@@ -56,11 +56,11 @@ pub fnc hadamard(
   let int left_count = 0;
   let int right_count = 0;
 
-  for value of left do
+  for const value of left do
     left_count = left_count + 1;
   done
 
-  for value of right do
+  for const value of right do
     right_count = right_count + 1;
   done
 
@@ -69,7 +69,7 @@ pub fnc hadamard(
   fi
 
   let int i = 0;
-  for value of left do
+  for const value of left do
     left[i] = value * right[i];
     i = i + 1;
   done
@@ -86,11 +86,11 @@ pub fnc axpy(
   let int x_count = 0;
   let int y_count = 0;
 
-  for value of x do
+  for const value of x do
     x_count = x_count + 1;
   done
 
-  for value of y do
+  for const value of y do
     y_count = y_count + 1;
   done
 
@@ -99,7 +99,7 @@ pub fnc axpy(
   fi
 
   let int i = 0;
-  for value of y do
+  for const value of y do
     y[i] = (a * x[i]) + value;
     i = i + 1;
   done
@@ -126,7 +126,7 @@ pub fnc normalize_l2(List<float> mut values): Result<List<float>, String> {
   fi
 
   let int i = 0;
-  for value of values do
+  for const value of values do
     values[i] = value / norm;
     i = i + 1;
   done

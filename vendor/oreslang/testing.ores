@@ -176,7 +176,7 @@ pub fnc run_suite(&TestSuite suite, &TestOptions options): RunSummary {
   let int skipped_count = 0;
   let int filtered_count = 0;
 
-  for test_case of suite.tests do
+  for const test_case of suite.tests do
     let String full_name = suite.name + "/" + test_case.name;
 
     if !selected(full_name, options.only); do
@@ -241,7 +241,7 @@ pub fnc check_int_cases(
   List<int> cases,
   IntProperty property
 ): TestOutcome {
-  for value of cases do
+  for const value of cases do
     let TestOutcome outcome = property(value);
     if !outcome.passed; do
       if outcome.message == ""; do

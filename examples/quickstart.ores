@@ -17,7 +17,7 @@ pub routine main(): void {
   val List<float> unit = unit_result.expect("normalization failed");
 
   stdio.stdout.write("unit=");
-  for value of unit do
+  for const value of unit do
     stdio.stdout.write(value);
     stdio.stdout.write(" ");
   done

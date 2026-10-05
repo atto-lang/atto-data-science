@@ -20,7 +20,7 @@ end
 
 fnc count_values(&List<float> values): int {
   let int count = 0;
-  for value of values do
+  for const value of values do
     count = count + 1;
   done
   return count;
@@ -79,7 +79,7 @@ pub fnc squared_magnitude_into(
   fi
 
   let int i = 0;
-  for x of points.x do
+  for const x of points.x do
     val float y = points.y[i];
     val float z = points.z[i];
     output[i] = (x * x) + (y * y) + (z * z);
@@ -98,7 +98,7 @@ pub fnc kinetic_energy(&ParticleSetF64 particles): Result<float, String> {
   let float energy = 0.0;
   let int i = 0;
 
-  for vx of particles.vx do
+  for const vx of particles.vx do
     val float vy = particles.vy[i];
     val float vz = particles.vz[i];
     val float mass = particles.mass[i];

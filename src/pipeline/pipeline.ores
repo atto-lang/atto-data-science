@@ -14,7 +14,7 @@ end
 
 fnc count_float_values(&List<float> values): int {
   let int count = 0;
-  for value of values do
+  for const value of values do
     count = count + 1;
   done
   return count;
@@ -25,7 +25,7 @@ pub fnc map_values(
   FloatMapper mapper
 ): List<float> {
   let int i = 0;
-  for value of input do
+  for const value of input do
     input[i] = mapper(value);
     i = i + 1;
   done
@@ -48,7 +48,7 @@ pub fnc filter_values_into(
   fi
 
   let int write_index = 0;
-  for value of input do
+  for const value of input do
     if predicate(value); do
       output[write_index] = value;
       write_index = write_index + 1;

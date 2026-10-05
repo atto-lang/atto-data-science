@@ -3,7 +3,7 @@
 
 pub fnc sum(&List<float> values): float {
   let float total = 0.0;
-  for value of values do
+  for const value of values do
     total = total + value;
   done
   return total;
@@ -11,7 +11,7 @@ pub fnc sum(&List<float> values): float {
 
 pub fnc sum_squares(&List<float> values): float {
   let float total = 0.0;
-  for value of values do
+  for const value of values do
     total = total + (value * value);
   done
   return total;
@@ -24,11 +24,11 @@ pub fnc dot(
   let int left_count = 0;
   let int right_count = 0;
 
-  for value of left do
+  for const value of left do
     left_count = left_count + 1;
   done
 
-  for value of right do
+  for const value of right do
     right_count = right_count + 1;
   done
 
@@ -38,7 +38,7 @@ pub fnc dot(
 
   let float total = 0.0;
   let int i = 0;
-  for value of left do
+  for const value of left do
     total = total + (value * right[i]);
     i = i + 1;
   done
@@ -50,7 +50,7 @@ pub fnc mean(&List<float> values): Result<float, String> {
   let float count = 0.0;
   let float average = 0.0;
 
-  for value of values do
+  for const value of values do
     count = count + 1.0;
     average = average + ((value - average) / count);
   done
@@ -69,7 +69,7 @@ pub fnc variance_population(
   let float average = 0.0;
   let float m2 = 0.0;
 
-  for value of values do
+  for const value of values do
     count = count + 1.0;
     val float delta = value - average;
     average = average + (delta / count);
@@ -91,7 +91,7 @@ pub fnc variance_sample(
   let float average = 0.0;
   let float m2 = 0.0;
 
-  for value of values do
+  for const value of values do
     count = count + 1.0;
     val float delta = value - average;
     average = average + (delta / count);
@@ -110,7 +110,7 @@ pub fnc minimum(&List<float> values): Result<float, String> {
   let bool seen = false;
   let float current = 0.0;
 
-  for value of values do
+  for const value of values do
     if !seen; do
       current = value;
       seen = true;
@@ -132,7 +132,7 @@ pub fnc maximum(&List<float> values): Result<float, String> {
   let bool seen = false;
   let float current = 0.0;
 
-  for value of values do
+  for const value of values do
     if !seen; do
       current = value;
       seen = true;

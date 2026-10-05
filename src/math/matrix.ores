@@ -6,7 +6,7 @@ end
 
 fnc count_values(&List<float> values): int {
   let int count = 0;
-  for value of values do
+  for const value of values do
     count = count + 1;
   done
   return count;

@@ -13,11 +13,11 @@ pub fnc validate_float_column(&FloatColumn column): Result<bool, String> {
   let int value_count = 0;
   let int validity_count = 0;
 
-  for value of column.values do
+  for const value of column.values do
     value_count = value_count + 1;
   done
 
-  for valid of column.valid do
+  for const valid of column.valid do
     validity_count = validity_count + 1;
   done
 
@@ -33,14 +33,14 @@ pub fnc validate_float_frame(&FloatFrame frame): Result<bool, String> {
     return Err("frame row_count must be non-negative");
   fi
 
-  for column of frame.columns do
+  for const column of frame.columns do
     val Result<bool, String> valid_column = validate_float_column(&column);
     if valid_column.is_err(); do
       return Err("frame contains an invalid column");
     fi
 
     let int column_count = 0;
-    for value of column.values do
+    for const value of column.values do
       column_count = column_count + 1;
     done
 
@@ -61,7 +61,7 @@ pub fnc column_sum(&FloatColumn column): Result<float, String> {
   let float total = 0.0;
   let int i = 0;
 
-  for value of column.values do
+  for const value of column.values do
     if column.valid[i]; do
       total = total + value;
     fi
@@ -81,7 +81,7 @@ pub fnc column_mean(&FloatColumn column): Result<float, String> {
   let float count = 0.0;
   let int i = 0;
 
-  for value of column.values do
+  for const value of column.values do
     if column.valid[i]; do
       total = total + value;
       count = count + 1.0;
