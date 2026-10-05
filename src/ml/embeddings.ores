@@ -31,7 +31,7 @@ define class TokenEmbeddingBatch as
   pub val String model_revision;
 end
 
-fnc count_float_values(&List<float> values): int {
+fnc count_float_values(List<float> values): int {
   let int count = 0;
   for const value of values do
     count = count + 1;
@@ -39,7 +39,7 @@ fnc count_float_values(&List<float> values): int {
   return count;
 }
 
-fnc count_int_values(&List<int> values): int {
+fnc count_int_values(List<int> values): int {
   let int count = 0;
   for const value of values do
     count = count + 1;
@@ -48,7 +48,7 @@ fnc count_int_values(&List<int> values): int {
 }
 
 pub fnc validate_embedding_batch(
-  &EmbeddingBatch batch
+  EmbeddingBatch batch
 ): Result<bool, String> {
   if batch.rows < 0; do
     return Err("embedding row count must be non-negative");
@@ -58,7 +58,7 @@ pub fnc validate_embedding_batch(
     return Err("embedding dimensions must be positive");
   fi
 
-  if count_float_values(&batch.values) != batch.rows * batch.dimensions; do
+  if count_float_values(batch.values) != batch.rows * batch.dimensions; do
     return Err("embedding storage length must equal rows * dimensions");
   fi
 
@@ -66,7 +66,7 @@ pub fnc validate_embedding_batch(
 }
 
 pub fnc validate_token_embedding_batch(
-  &TokenEmbeddingBatch batch
+  TokenEmbeddingBatch batch
 ): Result<bool, String> {
   if batch.rows < 0; do
     return Err("token embedding row count must be non-negative");
@@ -78,7 +78,7 @@ pub fnc validate_token_embedding_batch(
     return Err("token embedding dimensions must be positive");
   fi
 
-  if count_float_values(&batch.values) !=
+  if count_float_values(batch.values) !=
       batch.rows * batch.tokens_per_row * batch.dimensions; do
     return Err("token embedding storage length must equal rows * tokens * dimensions");
   fi
@@ -103,7 +103,7 @@ pub fnc validate_token_embedding_batch(
 // reference for the runtime intrinsic.
 @Intrinsic(EmbeddingMeanPool)
 pub fnc mean_pool_token_embeddings_into(
-  &TokenEmbeddingBatch batch,
+  TokenEmbeddingBatch batch,
   List<float> mut output,
   bool normalize_output
 ): Result<List<float>, String> {
@@ -112,7 +112,7 @@ pub fnc mean_pool_token_embeddings_into(
     return Err("invalid token embedding batch");
   fi
 
-  if count_float_values(&output) != batch.rows * batch.dimensions; do
+  if count_float_values(output) != batch.rows * batch.dimensions; do
     return Err("pooling output length must equal rows * dimensions");
   fi
 
@@ -215,7 +215,7 @@ pub fnc mean_pool_token_embeddings_into(
 
 @Intrinsic(EmbeddingNormalizeRows)
 pub fnc normalize_embedding_rows_into(
-  &EmbeddingBatch batch,
+  EmbeddingBatch batch,
   List<float> mut output
 ): Result<List<float>, String> {
   val Result<bool, String> valid = validate_embedding_batch(batch);
@@ -223,7 +223,7 @@ pub fnc normalize_embedding_rows_into(
     return Err("invalid embedding batch");
   fi
 
-  if count_float_values(&output) != batch.rows * batch.dimensions; do
+  if count_float_values(output) != batch.rows * batch.dimensions; do
     return Err("normalization output length must equal rows * dimensions");
   fi
 
@@ -275,8 +275,8 @@ pub fnc normalize_embedding_rows_into(
 
 @Intrinsic(EmbeddingDotSimilarity)
 pub fnc dot_similarity_into(
-  &EmbeddingBatch queries,
-  &EmbeddingBatch corpus,
+  EmbeddingBatch queries,
+  EmbeddingBatch corpus,
   List<float> mut output
 ): Result<List<float>, String> {
   val Result<bool, String> queries_valid = validate_embedding_batch(queries);
@@ -293,7 +293,7 @@ pub fnc dot_similarity_into(
     return Err("embedding batches must have equal dimensions");
   fi
 
-  if count_float_values(&output) != queries.rows * corpus.rows; do
+  if count_float_values(output) != queries.rows * corpus.rows; do
     return Err("dot output length must equal query rows * corpus rows");
   fi
 
@@ -334,8 +334,8 @@ pub fnc dot_similarity_into(
 
 @Intrinsic(EmbeddingCosineSimilarity)
 pub fnc cosine_similarity_into(
-  &EmbeddingBatch queries,
-  &EmbeddingBatch corpus,
+  EmbeddingBatch queries,
+  EmbeddingBatch corpus,
   List<float> mut output
 ): Result<List<float>, String> {
   val Result<bool, String> queries_valid = validate_embedding_batch(queries);
@@ -352,7 +352,7 @@ pub fnc cosine_similarity_into(
     return Err("embedding batches must have equal dimensions");
   fi
 
-  if count_float_values(&output) != queries.rows * corpus.rows; do
+  if count_float_values(output) != queries.rows * corpus.rows; do
     return Err("cosine output length must equal query rows * corpus rows");
   fi
 
@@ -423,8 +423,8 @@ pub fnc cosine_similarity_into(
 
 @Intrinsic(EmbeddingSquaredL2)
 pub fnc squared_l2_distance_into(
-  &EmbeddingBatch queries,
-  &EmbeddingBatch corpus,
+  EmbeddingBatch queries,
+  EmbeddingBatch corpus,
   List<float> mut output
 ): Result<List<float>, String> {
   val Result<bool, String> queries_valid = validate_embedding_batch(queries);
@@ -441,7 +441,7 @@ pub fnc squared_l2_distance_into(
     return Err("embedding batches must have equal dimensions");
   fi
 
-  if count_float_values(&output) != queries.rows * corpus.rows; do
+  if count_float_values(output) != queries.rows * corpus.rows; do
     return Err("distance output length must equal query rows * corpus rows");
   fi
 
@@ -482,7 +482,7 @@ pub fnc squared_l2_distance_into(
 }
 
 fnc selected_in_prefix(
-  &List<int> output_indices,
+  List<int> output_indices,
   int row_base,
   int selected_count,
   int candidate
@@ -505,7 +505,7 @@ fnc selected_in_prefix(
 
 @Intrinsic(EmbeddingTopK)
 pub fnc top_k_indices_into(
-  &List<float> scores,
+  List<float> scores,
   int rows,
   int cols,
   int k,
@@ -527,7 +527,7 @@ pub fnc top_k_indices_into(
   if count_float_values(scores) != rows * cols; do
     return Err("top-k score length must equal rows * cols");
   fi
-  if count_int_values(&output_indices) != rows * k; do
+  if count_int_values(output_indices) != rows * k; do
     return Err("top-k output length must equal rows * k");
   fi
 
@@ -555,7 +555,7 @@ pub fnc top_k_indices_into(
         fi
 
         val bool already_selected = selected_in_prefix(
-          &output_indices,
+          output_indices,
           row_base,
           rank,
           candidate
@@ -595,8 +595,8 @@ pub fnc top_k_indices_into(
 
 @Intrinsic(EmbeddingTopKDot)
 pub fnc top_k_dot_into(
-  &EmbeddingBatch queries,
-  &EmbeddingBatch corpus,
+  EmbeddingBatch queries,
+  EmbeddingBatch corpus,
   int k,
   List<int> mut top_indices,
   List<float> mut top_scores
@@ -620,10 +620,10 @@ pub fnc top_k_dot_into(
   if k > corpus.rows; do
     return Err("top-k k cannot exceed corpus row count");
   fi
-  if count_int_values(&top_indices) != queries.rows * k; do
+  if count_int_values(top_indices) != queries.rows * k; do
     return Err("top-k index output length must equal query rows * k");
   fi
-  if count_float_values(&top_scores) != queries.rows * k; do
+  if count_float_values(top_scores) != queries.rows * k; do
     return Err("top-k score output length must equal query rows * k");
   fi
 
