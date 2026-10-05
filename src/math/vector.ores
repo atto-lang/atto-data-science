@@ -79,7 +79,7 @@ pub fnc hadamard(
   return Ok(left);
 }
 
-// BLAS-style y <- a*x + y.
+// BLAS-style y <- a * x + y.
 pub fnc axpy(
   float a,
   List<float> x,
