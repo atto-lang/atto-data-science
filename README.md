@@ -56,7 +56,7 @@ val EmbeddingBatch corpus = new EmbeddingBatch(
 val List<int> indices = arr[0, 0];
 val List<float> scores = arr[0.0, 0.0];
 
-top_k_dot_into(&query, &corpus, 2, indices, scores)
+top_k_dot_into(query, corpus, 2, indices, scores)
   .expect("retrieval failed");
 ```
 
