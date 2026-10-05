@@ -13,7 +13,7 @@ pub routine main(): void {
 
   val List<float> normalized_values = arr[0.0, 0.0, 0.0];
   val Result<List<float>, String> normalized_result =
-    normalize_embedding_rows_into(&query, normalized_values);
+    normalize_embedding_rows_into(query, normalized_values);
   val List<float> normalized = normalized_result.expect("normalization failed");
 
   val EmbeddingBatch normalized_query = new EmbeddingBatch(
@@ -42,7 +42,7 @@ pub routine main(): void {
   val List<float> scores = arr[0.0, 0.0];
 
   val Result<bool, String> result =
-    top_k_dot_into(&normalized_query, &corpus, 2, indices, scores);
+    top_k_dot_into(normalized_query, corpus, 2, indices, scores);
   result.expect("top-k failed");
 
   stdio.stdout.write("top_index=");
