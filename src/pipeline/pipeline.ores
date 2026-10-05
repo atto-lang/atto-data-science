@@ -24,10 +24,9 @@ pub fnc map_values(
   List<float> mut input,
   FloatMapper mapper
 ): List<float> {
-  let int i = 0;
-  for const value of input do
-    input[i] = mapper(value);
-    i = i + 1;
+  val int input_count = count_float_values(&input);
+  for int i = 0; i < input_count; i++ do
+    input[i] = mapper(input[i]);
   done
 
   return input;
