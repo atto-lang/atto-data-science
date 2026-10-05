@@ -14,7 +14,7 @@ fnc test_embedding_validation(): TestOutcome {
     "v1"
   );
 
-  val Result<bool, String> result = validate_embedding_batch(&invalid);
+  val Result<bool, String> result = validate_embedding_batch(invalid);
   return expect_true(
     result.is_err(),
     "embedding batch must reject invalid row-major storage"
@@ -42,14 +42,14 @@ fnc test_embedding_mean_pooling(): TestOutcome {
     "v1"
   );
 
-  val Result<bool, String> valid = validate_token_embedding_batch(&tokens);
+  val Result<bool, String> valid = validate_token_embedding_batch(tokens);
   if valid.is_err(); do
     return fail("token embedding batch validation returned Err");
   fi
 
   val List<float> mean_output = arr[0.0, 0.0, 0.0, 0.0];
   val Result<List<float>, String> mean_result =
-    mean_pool_token_embeddings_into(&tokens, mean_output, false);
+    mean_pool_token_embeddings_into(tokens, mean_output, false);
   if mean_result.is_err(); do
     return fail("mean pooling returned Err");
   fi
@@ -94,7 +94,7 @@ fnc test_embedding_mean_pooling(): TestOutcome {
 
   val List<float> normalized_output = arr[0.0, 0.0, 0.0, 0.0];
   val Result<List<float>, String> normalized_result =
-    mean_pool_token_embeddings_into(&tokens, normalized_output, true);
+    mean_pool_token_embeddings_into(tokens, normalized_output, true);
   if normalized_result.is_err(); do
     return fail("normalized mean pooling returned Err");
   fi
@@ -130,7 +130,7 @@ fnc test_embedding_row_normalization(): TestOutcome {
   val List<float> output = arr[0.0, 0.0, 0.0, 0.0];
 
   val Result<List<float>, String> result =
-    normalize_embedding_rows_into(&batch, output);
+    normalize_embedding_rows_into(batch, output);
   if result.is_err(); do
     return fail("embedding row normalization returned Err");
   fi
@@ -200,7 +200,7 @@ fnc test_embedding_similarity_kernels(): TestOutcome {
 
   val List<float> dot_output = arr[0.0, 0.0, 0.0];
   val Result<List<float>, String> dot_result =
-    dot_similarity_into(&queries, &corpus, dot_output);
+    dot_similarity_into(queries, corpus, dot_output);
   if dot_result.is_err(); do
     return fail("embedding dot similarity returned Err");
   fi
@@ -239,7 +239,7 @@ fnc test_embedding_similarity_kernels(): TestOutcome {
 
   val List<float> cosine_output = arr[0.0, 0.0, 0.0];
   val Result<List<float>, String> cosine_result =
-    cosine_similarity_into(&queries, &corpus, cosine_output);
+    cosine_similarity_into(queries, corpus, cosine_output);
   if cosine_result.is_err(); do
     return fail("embedding cosine similarity returned Err");
   fi
@@ -257,7 +257,7 @@ fnc test_embedding_similarity_kernels(): TestOutcome {
 
   val List<float> l2_output = arr[0.0, 0.0, 0.0];
   val Result<List<float>, String> l2_result =
-    squared_l2_distance_into(&queries, &corpus, l2_output);
+    squared_l2_distance_into(queries, corpus, l2_output);
   if l2_result.is_err(); do
     return fail("embedding squared L2 returned Err");
   fi
@@ -289,7 +289,7 @@ fnc test_embedding_top_k(): TestOutcome {
   val List<int> indices = arr[0, 0, 0, 0];
 
   val Result<List<int>, String> result =
-    top_k_indices_into(&scores, 2, 3, 2, indices);
+    top_k_indices_into(scores, 2, 3, 2, indices);
   if result.is_err(); do
     return fail("top_k_indices_into returned Err");
   fi
@@ -335,7 +335,7 @@ fnc test_embedding_fused_dot_top_k(): TestOutcome {
   val List<float> scores = arr[0.0, 0.0];
 
   val Result<bool, String> result =
-    top_k_dot_into(&queries, &corpus, 2, indices, scores);
+    top_k_dot_into(queries, corpus, 2, indices, scores);
   if result.is_err(); do
     return fail("top_k_dot_into returned Err");
   fi
@@ -379,7 +379,7 @@ pub routine main(): void {
   );
 
   val TestOptions options = new TestOptions("", false, true);
-  val RunSummary summary = run_suite(&suite, &options);
-  require_success(&summary);
+  val RunSummary summary = run_suite(suite, options);
+  require_success(summary);
   return;
 }
