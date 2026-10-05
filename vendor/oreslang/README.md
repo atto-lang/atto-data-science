@@ -8,5 +8,11 @@
 - source path: `stdlib/testing.ores`
 
 It is vendored so this repository's native tests are reproducible without a
-cross-private-repository token. Keep the file byte-for-byte synchronized with
-the pinned core revision.
+cross-private-repository token.
+
+The vendored file is based on the pinned core blob above, with the explicit
+for-of declaration migration applied locally (`for const ... of ...`) so it
+remains compatible with the hardened iterator grammar in core PR #239. Until
+that grammar change is merged into the canonical testing source, do not claim
+the vendored file is byte-for-byte identical to the pinned blob; audit any
+additional local delta explicitly.
