@@ -17,7 +17,9 @@ The current compiler-facing implementation provides:
 - allocation-conscious map/filter pipeline primitives;
 - Struct-of-Arrays point-cloud and particle data models.
 
-Current core `main` represents typed sequences as `List<T>`. Read-only kernels use explicit borrows of the concrete list type; `@Structural` is reserved for explicit shape-based compatibility when a callable intentionally accepts values across nominal representation categories. Owned mutable buffers are used for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
+Current core `main` represents typed sequences as `List<T>`. Oreslang object values are references and ordinary arguments are passed by reference: passing `values` does not copy the object and does not require address-of syntax. Oreslang source does **not** expose raw pointers: `&` is not an address-of/borrow operator, unary `*` is not a dereference operator, and pointer arithmetic is not part of userland Oreslang. (`*` remains the ordinary multiplication operator.)
+
+Ownership and access changes are explicit operations: `rt copy`, `rt borrow`, `rt take`, and `rt share`. Mutation authority is expressed with `mut`, not with `&mut` or pointer types. `@Structural` remains reserved for explicit shape-based compatibility when a callable intentionally accepts values across nominal representation categories. Mutable buffers are used for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
 
 ## Example
 
@@ -28,9 +30,8 @@ import fnc scale from './src/math/vector';
 val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
 val List<float> doubled = scale(values, 2.0);
 
-// Explicit borrow is currently used at opaque cross-file import boundaries;
-// no structural type matching is required for this concrete List<float> API.
-val Result<float, String> average = mean(&doubled);
+// Ordinary object arguments are references. No '&' or '*' pointer syntax is used.
+val Result<float, String> average = mean(doubled);
 stdio.stdout.println(average.expect("mean failed"));
 ```
 
