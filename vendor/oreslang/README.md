@@ -10,9 +10,13 @@
 It is vendored so this repository's native tests are reproducible without a
 cross-private-repository token.
 
-The vendored file is based on the pinned core blob above, with the explicit
-for-of declaration migration applied locally (`for const ... of ...`) so it
-remains compatible with the hardened iterator grammar in core PR #239. Until
-that grammar change is merged into the canonical testing source, do not claim
-the vendored file is byte-for-byte identical to the pinned blob; audit any
-additional local delta explicitly.
+The vendored file is based on the pinned core blob above, with two explicit
+local migrations applied:
+
+- the hardened for-of declaration form (`for const ... of ...`);
+- pointer-free reference syntax: ordinary object parameters/calls do not use
+  `&` or unary dereference `*`.
+
+These deltas keep the vendored tests aligned with the current Oreslang language
+direction. Do not claim the vendored file is byte-for-byte identical to the
+pinned blob; audit any additional local delta explicitly.
