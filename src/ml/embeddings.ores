@@ -133,7 +133,7 @@ pub fnc mean_pool_token_embeddings_into(
       clear_col = clear_col + 1;
     }
 
-    let int active_tokens = 0;
+    let float active_tokens = 0.0;
     let int token = 0;
     loop {
       if token >= batch.tokens_per_row; do
@@ -142,7 +142,7 @@ pub fnc mean_pool_token_embeddings_into(
 
       val int token_mask_index = (row * batch.tokens_per_row) + token;
       if batch.attention_mask[token_mask_index]; do
-        active_tokens = active_tokens + 1;
+        active_tokens = active_tokens + 1.0;
         val int token_base =
           ((row * batch.tokens_per_row) + token) * batch.dimensions;
 
@@ -160,7 +160,7 @@ pub fnc mean_pool_token_embeddings_into(
       token = token + 1;
     }
 
-    if active_tokens == 0; do
+    if active_tokens == 0.0; do
       return Err("mean pooling requires at least one unmasked token per row");
     fi
 
