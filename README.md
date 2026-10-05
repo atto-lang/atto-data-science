@@ -67,6 +67,8 @@ top_k_dot_into(query, corpus, 2, indices, scores)
 
 For normalized embeddings, cosine ranking is dot-product ranking. Normalize once after model pooling, then reuse `top_k_dot_into` for repeated retrieval.
 
+Similarity and retrieval kernels reject batches from different `model_id` / `model_revision` spaces before mutating caller-owned outputs.
+
 See [Embedding architecture](docs/EMBEDDINGS.md) for the batch inference, actor microbatching, contiguous-array, SIMD, and GPU direction.
 
 ## Native tests
