@@ -22,7 +22,7 @@ This keeps dense retrieval compatible with BLAS/GEMM-style execution and avoids 
 
 The initial native surface includes:
 
-- `normalize_embedding_rows_into`;
+- `mean_pool_token_embeddings_into` for mask-aware transformer hidden-state pooling;\n- `normalize_embedding_rows_into`;
 - `dot_similarity_into`;
 - `cosine_similarity_into`;
 - `squared_l2_distance_into`;
@@ -39,7 +39,7 @@ Dimensions alone do not make two embeddings comparable. Batches carry `model_id`
 
 ## Embedding generation pipeline
 
-The target runtime pipeline is:
+`TokenEmbeddingBatch` represents padded transformer hidden states as one flat `[batch, tokens, hidden]` buffer plus a separate boolean attention mask. Mean pooling writes directly into the caller-owned `[batch, hidden]` embedding buffer; optional normalization is fused into that operation.\n\nThe target runtime pipeline is:
 
 ```text
 text
@@ -69,7 +69,7 @@ The contiguous-array runtime should eventually support:
 - explicit host/device residency;
 - pinned transfer buffers where useful;
 - caller-owned reusable destination buffers;
-- fused pooling + normalization;
+- fused mask-aware mean pooling + normalization;
 - fused dot + top-k;
 - quantized storage/search paths such as int8 where error budgets allow it.
 
