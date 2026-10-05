@@ -10,14 +10,14 @@ The current compiler-facing implementation provides:
 
 - scalar math helpers and checked square root;
 - numerically stable Welford mean/variance reductions;
-- borrowed, allocation-free reductions such as `sum` and `dot`;
+- non-consuming structural read views for reductions such as `sum` and `dot`;
 - owned in-place vector transforms such as `scale`, `axpy`, and L2 normalization;
 - row-major `DenseMatrixF64` with caller-provided output buffers;
 - nullable columnar `FloatColumn` and `FloatFrame`;
 - allocation-conscious map/filter pipeline primitives;
 - Struct-of-Arrays point-cloud and particle data models.
 
-Current core `main` represents typed sequences as `List<T>`. The library deliberately uses borrows for read-only kernels and owned mutable buffers for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
+Current core `main` represents typed sequences as `List<T>`. Read kernels use `@Structural List<T>`, which Oreslang treats as a read-only non-consuming view while retaining iterable list typing. Owned mutable buffers are used for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
 
 ## Example
 
@@ -27,6 +27,9 @@ import fnc scale from './src/math/vector';
 
 val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
 val List<float> doubled = scale(values, 2.0);
+
+// Explicit borrow is currently used at opaque cross-file import boundaries;
+// the target mean() parameter is a non-consuming structural view.
 val Result<float, String> average = mean(&doubled);
 stdio.stdout.println(average.expect("mean failed"));
 ```
@@ -39,6 +42,6 @@ The repository uses the Oreslang-native framework from core PR #233. A pinned co
 ORESLANG_BIN=/path/to/oreslang ./scripts/test.sh
 ```
 
-The suite in `tests/main.ores` currently covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, and SoA particle energy.
+The suite in `tests/main.ores` covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, and SoA particle energy.
 
 See [Architecture](docs/ARCHITECTURE.md) and [Roadmap](ROADMAP.md).

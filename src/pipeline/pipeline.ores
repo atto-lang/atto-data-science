@@ -12,7 +12,7 @@ define class CompactedF64 as
   pub val int count;
 end
 
-fnc count_float_values(&List<float> values): int {
+fnc count_float_values(@Structural List<float> values): int {
   let int count = 0;
   for value of values do
     count = count + 1;
@@ -36,12 +36,12 @@ pub fnc map_values(
 // Compacts matching values into the prefix of an existing output buffer.
 // CompactedF64.count identifies the valid prefix length.
 pub fnc filter_values_into(
-  &List<float> input,
+  @Structural List<float> input,
   List<float> mut output,
   FloatPredicate predicate
 ): Result<CompactedF64, String> {
   val int input_count = count_float_values(input);
-  val int output_count = count_float_values(&output);
+  val int output_count = count_float_values(output);
 
   if output_count < input_count; do
     return Err("filter output buffer must be at least input length");
