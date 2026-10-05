@@ -13,7 +13,7 @@ The current compiler-facing implementation provides:
 - borrowed, allocation-free reductions such as `sum` and `dot`;
 - owned in-place vector transforms such as `scale`, `axpy`, and L2 normalization;
 - row-major `DenseMatrixF64` with caller-provided output buffers;
-- row-major `EmbeddingBatch` values with model/revision identity;\n- padded `TokenEmbeddingBatch` hidden states plus attention masks;\n- mask-aware mean pooling with optional fused L2 normalization;
+- row-major `EmbeddingBatch` values with model/revision identity;\n- padded `TokenEmbeddingBatch` hidden states plus attention masks;\n- mask-aware mean pooling with optional fused L2 normalization;\n- a batch-first `EmbeddingBackend` contract with caller-owned output buffers;
 - embedding row normalization plus batch dot, cosine, and squared-L2 kernels;
 - stable row-wise top-k selection;
 - fused dot + top-k retrieval without materializing a full query-by-corpus score matrix;
