@@ -51,6 +51,7 @@ pub fnc validate_embedding_batch(
   return Ok(true);
 }
 
+@Intrinsic(EmbeddingNormalizeRows)
 pub fnc normalize_embedding_rows_into(
   &EmbeddingBatch batch,
   List<float> mut output
@@ -110,6 +111,7 @@ pub fnc normalize_embedding_rows_into(
   return Ok(output);
 }
 
+@Intrinsic(EmbeddingDotSimilarity)
 pub fnc dot_similarity_into(
   &EmbeddingBatch queries,
   &EmbeddingBatch corpus,
@@ -168,6 +170,7 @@ pub fnc dot_similarity_into(
   return Ok(output);
 }
 
+@Intrinsic(EmbeddingCosineSimilarity)
 pub fnc cosine_similarity_into(
   &EmbeddingBatch queries,
   &EmbeddingBatch corpus,
@@ -256,6 +259,7 @@ pub fnc cosine_similarity_into(
   return Ok(output);
 }
 
+@Intrinsic(EmbeddingSquaredL2)
 pub fnc squared_l2_distance_into(
   &EmbeddingBatch queries,
   &EmbeddingBatch corpus,
@@ -337,6 +341,7 @@ fnc selected_in_prefix(
   return false;
 }
 
+@Intrinsic(EmbeddingTopK)
 pub fnc top_k_indices_into(
   &List<float> scores,
   int rows,
@@ -426,6 +431,7 @@ pub fnc top_k_indices_into(
   return Ok(output_indices);
 }
 
+@Intrinsic(EmbeddingTopKDot)
 pub fnc top_k_dot_into(
   &EmbeddingBatch queries,
   &EmbeddingBatch corpus,
