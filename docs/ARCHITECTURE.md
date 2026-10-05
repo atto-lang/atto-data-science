@@ -14,7 +14,7 @@ Core algorithms and tests live in `.ores` files. Java is not the implementation 
 
 ### Borrowed reads, owned writes
 
-Read-only sequence kernels accept borrowed concrete lists such as `&List<float>` on the current core surface. `@Structural` is a type-compatibility escape hatch for intentionally shape-matched class/interface/trait contracts; it is not an ownership or read-only marker for ordinary collections. Transforms take ownership of mutable buffers and return them. Matrix, embedding, filtering, and SoA kernels accept caller-provided destination buffers rather than requiring hidden allocation.
+Read-only sequence kernels accept borrowed concrete lists such as `List<float>` on the current core surface. `@Structural` is a type-compatibility escape hatch for intentionally shape-matched class/interface/trait contracts; it is not an ownership or read-only marker for ordinary collections. Transforms take ownership of mutable buffers and return them. Matrix, embedding, filtering, and SoA kernels accept caller-provided destination buffers rather than requiring hidden allocation.
 
 This keeps access/ownership semantics separate from nominal-versus-structural type compatibility and remains a clean lowering boundary for a future native contiguous `Array<T>`.
 
