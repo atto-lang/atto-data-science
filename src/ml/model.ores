@@ -18,7 +18,7 @@ pub define interface EmbeddingBackend
   fnc max_batch_size() => int;
 
   fnc embed_batch(
-    &List<String> texts,
+    List<String> texts,
     List<float> mut output
   ) => Result<EmbeddingBatch, String>;
 end
