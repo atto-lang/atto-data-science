@@ -27,13 +27,24 @@ fnc count_values(&List<float> values): int {
 }
 
 pub fnc validate_point_cloud(&PointCloud3F64 points): Result<bool, String> {
-  val int count = count_values(&points.x);
+  let int x_count = 0;
+  let int y_count = 0;
+  let int z_count = 0;
 
-  if count_values(&points.y) != count; do
+  for value of points.x do
+    x_count = x_count + 1;
+  done
+  for value of points.y do
+    y_count = y_count + 1;
+  done
+  for value of points.z do
+    z_count = z_count + 1;
+  done
+
+  if y_count != x_count; do
     return Err("point-cloud SoA columns must have equal length");
   fi
-
-  if count_values(&points.z) != count; do
+  if z_count != x_count; do
     return Err("point-cloud SoA columns must have equal length");
   fi
 
@@ -41,24 +52,52 @@ pub fnc validate_point_cloud(&PointCloud3F64 points): Result<bool, String> {
 }
 
 pub fnc validate_particles(&ParticleSetF64 particles): Result<bool, String> {
-  val int count = count_values(&particles.x);
+  let int x_count = 0;
+  let int y_count = 0;
+  let int z_count = 0;
+  let int vx_count = 0;
+  let int vy_count = 0;
+  let int vz_count = 0;
+  let int mass_count = 0;
 
-  if count_values(&particles.y) != count; do
+  for value of particles.x do
+    x_count = x_count + 1;
+  done
+  for value of particles.y do
+    y_count = y_count + 1;
+  done
+  for value of particles.z do
+    z_count = z_count + 1;
+  done
+  for value of particles.vx do
+    vx_count = vx_count + 1;
+  done
+  for value of particles.vy do
+    vy_count = vy_count + 1;
+  done
+  for value of particles.vz do
+    vz_count = vz_count + 1;
+  done
+  for value of particles.mass do
+    mass_count = mass_count + 1;
+  done
+
+  if y_count != x_count; do
     return Err("particle SoA columns must have equal length");
   fi
-  if count_values(&particles.z) != count; do
+  if z_count != x_count; do
     return Err("particle SoA columns must have equal length");
   fi
-  if count_values(&particles.vx) != count; do
+  if vx_count != x_count; do
     return Err("particle SoA columns must have equal length");
   fi
-  if count_values(&particles.vy) != count; do
+  if vy_count != x_count; do
     return Err("particle SoA columns must have equal length");
   fi
-  if count_values(&particles.vz) != count; do
+  if vz_count != x_count; do
     return Err("particle SoA columns must have equal length");
   fi
-  if count_values(&particles.mass) != count; do
+  if mass_count != x_count; do
     return Err("particle SoA columns must have equal length");
   fi
 
@@ -74,7 +113,11 @@ pub fnc squared_magnitude_into(
     return Err("invalid point cloud");
   fi
 
-  val int point_count = count_values(&points.x);
+  let int point_count = 0;
+  for value of points.x do
+    point_count = point_count + 1;
+  done
+
   if count_values(&output) != point_count; do
     return Err("output length must equal point count");
   fi

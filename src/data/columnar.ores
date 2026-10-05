@@ -9,24 +9,19 @@ define class FloatFrame as
   pub val int row_count;
 end
 
-fnc count_float_values(&List<float> values): int {
-  let int count = 0;
-  for value of values do
-    count = count + 1;
-  done
-  return count;
-}
-
-fnc count_bool_values(&List<bool> values): int {
-  let int count = 0;
-  for value of values do
-    count = count + 1;
-  done
-  return count;
-}
-
 pub fnc validate_float_column(&FloatColumn column): Result<bool, String> {
-  if count_float_values(&column.values) != count_bool_values(&column.valid); do
+  let int value_count = 0;
+  let int validity_count = 0;
+
+  for value of column.values do
+    value_count = value_count + 1;
+  done
+
+  for valid of column.valid do
+    validity_count = validity_count + 1;
+  done
+
+  if value_count != validity_count; do
     return Err("column values and validity mask must have equal length");
   fi
 
@@ -44,7 +39,12 @@ pub fnc validate_float_frame(&FloatFrame frame): Result<bool, String> {
       return Err("frame contains an invalid column");
     fi
 
-    if count_float_values(&column.values) != frame.row_count; do
+    let int column_count = 0;
+    for value of column.values do
+      column_count = column_count + 1;
+    done
+
+    if column_count != frame.row_count; do
       return Err("every column must have frame.row_count values");
     fi
   done

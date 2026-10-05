@@ -21,7 +21,12 @@ pub fnc validate_matrix(&DenseMatrixF64 matrix): Result<bool, String> {
     return Err("matrix column count must be non-negative");
   fi
 
-  if count_values(&matrix.values) != matrix.rows * matrix.cols; do
+  let int storage_count = 0;
+  for value of matrix.values do
+    storage_count = storage_count + 1;
+  done
+
+  if storage_count != matrix.rows * matrix.cols; do
     return Err("matrix storage length does not match rows * cols");
   fi
 
