@@ -12,11 +12,11 @@ The public API should remain concise enough for exploratory work while the stora
 
 Core algorithms and tests live in `.ores` files. Java is not the implementation language for this library. Runtime/compiler intrinsics may later optimize recognized kernels while preserving the Oreslang reference semantics.
 
-### Structural reads, owned writes
+### Borrowed reads, owned writes
 
-Read-only sequence kernels accept `@Structural List<float>`. In current Oreslang this is a non-consuming borrowed view with ordinary iterable `List<T>` typing. Transforms take ownership of mutable buffers and return them. Matrix, filtering, and SoA kernels accept caller-provided destination buffers rather than requiring hidden allocation.
+Read-only sequence kernels accept borrowed concrete lists such as `&List<float>` on the current core surface. `@Structural` is a type-compatibility escape hatch for intentionally shape-matched class/interface/trait contracts; it is not an ownership or read-only marker for ordinary collections. Transforms take ownership of mutable buffers and return them. Matrix, filtering, and SoA kernels accept caller-provided destination buffers rather than requiring hidden allocation.
 
-This gives the compiler explicit access intent and is a clean lowering boundary for a future native contiguous `Array<T>`.
+This keeps access/ownership semantics separate from nominal-versus-structural type compatibility and remains a clean lowering boundary for a future native contiguous `Array<T>`.
 
 ### Columnar by default
 

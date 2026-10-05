@@ -23,7 +23,7 @@ pub fnc scale(List<float> mut values, float factor): List<float> {
 
 pub fnc add(
   List<float> mut left,
-  @Structural List<float> right
+  &List<float> right
 ): Result<List<float>, String> {
   let int left_count = 0;
   let int right_count = 0;
@@ -51,7 +51,7 @@ pub fnc add(
 
 pub fnc hadamard(
   List<float> mut left,
-  @Structural List<float> right
+  &List<float> right
 ): Result<List<float>, String> {
   let int left_count = 0;
   let int right_count = 0;
@@ -80,7 +80,7 @@ pub fnc hadamard(
 // BLAS-style y <- a*x + y.
 pub fnc axpy(
   float a,
-  @Structural List<float> x,
+  &List<float> x,
   List<float> mut y
 ): Result<List<float>, String> {
   let int x_count = 0;
@@ -109,8 +109,7 @@ pub fnc axpy(
 
 pub fnc normalize_l2(List<float> mut values): Result<List<float>, String> {
   // Cross-file imports are opaque on current main, so explicit temporary
-  // borrows prevent ownership consumption at this call boundary. Borrows erase
-  // at runtime; dot's native signature is structural/read-only.
+  // borrows preserve caller ownership at this call boundary.
   val Result<float, String> squared_result = dot(&values, &values);
   if squared_result.is_err(); do
     return Err("failed to compute vector norm");

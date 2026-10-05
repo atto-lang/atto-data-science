@@ -10,14 +10,14 @@ The current compiler-facing implementation provides:
 
 - scalar math helpers and checked square root;
 - numerically stable Welford mean/variance reductions;
-- non-consuming structural read views for reductions such as `sum` and `dot`;
+- borrowed, allocation-free reductions such as `sum` and `dot`;
 - owned in-place vector transforms such as `scale`, `axpy`, and L2 normalization;
 - row-major `DenseMatrixF64` with caller-provided output buffers;
 - nullable columnar `FloatColumn` and `FloatFrame`;
 - allocation-conscious map/filter pipeline primitives;
 - Struct-of-Arrays point-cloud and particle data models.
 
-Current core `main` represents typed sequences as `List<T>`. Read kernels use `@Structural List<T>`, which Oreslang treats as a read-only non-consuming view while retaining iterable list typing. Owned mutable buffers are used for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
+Current core `main` represents typed sequences as `List<T>`. Read-only kernels use explicit borrows of the concrete list type; `@Structural` is reserved for explicit shape-based compatibility when a callable intentionally accepts values across nominal representation categories. Owned mutable buffers are used for transforms so a future dedicated contiguous `Array<T>` can replace the storage primitive without changing the higher-level execution model.
 
 ## Example
 
@@ -29,7 +29,7 @@ val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
 val List<float> doubled = scale(values, 2.0);
 
 // Explicit borrow is currently used at opaque cross-file import boundaries;
-// the target mean() parameter is a non-consuming structural view.
+// no structural type matching is required for this concrete List<float> API.
 val Result<float, String> average = mean(&doubled);
 stdio.stdout.println(average.expect("mean failed"));
 ```
