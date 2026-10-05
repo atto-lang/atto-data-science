@@ -69,6 +69,13 @@ if [ -n "$doc_newlines" ]; then
   failed=1
 fi
 
+# Multi-name imports are explicit selections. Bare comma-separated imports are
+# ambiguous with the single-name grammar and must use braces.
+if grep -nHE '^[[:space:]]*import[[:space:]]+(class|fnc|module|actor)[[:space:]]+[^{*][^;]*,[^;]*[[:space:]]+from[[:space:]]' $files; then
+  echo "error: multi-name imports must use brace selections" >&2
+  failed=1
+fi
+
 if [ "$failed" -ne 0 ]; then
   exit 1
 fi
