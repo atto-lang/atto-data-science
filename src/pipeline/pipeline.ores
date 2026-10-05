@@ -1,0 +1,57 @@
+// Small functional pipeline kernel. Stages operate on contiguous arrays,
+// making later fusion/SIMD/GPU lowering possible without changing user code.
+
+pub fnc map_values(Array<float> input, (float) => float mapper) -> Array<float> {
+  var Array<float> output = new Array<float>();
+  for value of input {
+    output.push(mapper(value));
+  }
+  return output;
+}
+
+pub fnc filter_values(Array<float> input, (float) => bool predicate) -> Array<float> {
+  var Array<float> output = new Array<float>();
+  for value of input {
+    if predicate(value) {
+      output.push(value);
+    }
+  }
+  return output;
+}
+
+pub fnc run_pipeline(
+  Array<float> input,
+  Array<(Array<float>) => Array<float>> stages
+) -> Array<float> {
+  var Array<float> current = input;
+
+  for stage of stages {
+    current = stage(current);
+  }
+
+  return current;
+}
+
+pub fnc chunk(Array<float> input, int batch_size) -> Result<Array<Array<float>>, String> {
+  if batch_size <= 0 {
+    return Err("batch_size must be positive");
+  }
+
+  var Array<Array<float>> batches = new Array<Array<float>>();
+  var Array<float> current = new Array<float>();
+
+  for value of input {
+    current.push(value);
+
+    if current.length == batch_size {
+      batches.push(current);
+      current = new Array<float>();
+    }
+  }
+
+  if current.length > 0 {
+    batches.push(current);
+  }
+
+  return Ok(batches);
+}

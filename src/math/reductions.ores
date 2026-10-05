@@ -1,0 +1,118 @@
+// Reductions over contiguous f64-like Oreslang float arrays.
+// Welford accumulation is used for stable variance.
+
+pub fnc sum(Array<float> values) -> float {
+  var float total = 0.0;
+  for value of values {
+    total += value;
+  }
+  return total;
+}
+
+pub fnc sum_squares(Array<float> values) -> float {
+  var float total = 0.0;
+  for value of values {
+    total += value * value;
+  }
+  return total;
+}
+
+pub fnc dot(Array<float> left, Array<float> right) -> Result<float, String> {
+  if left.length != right.length {
+    return Err("dot requires arrays with equal length");
+  }
+
+  var float total = 0.0;
+  var int i = 0;
+  for value of left {
+    total += value * right[i];
+    i += 1;
+  }
+  return Ok(total);
+}
+
+pub fnc mean(Array<float> values) -> Result<float, String> {
+  if values.length == 0 {
+    return Err("mean requires at least one value");
+  }
+
+  var float count = 0.0;
+  var float avg = 0.0;
+
+  for value of values {
+    count += 1.0;
+    avg += (value - avg) / count;
+  }
+
+  return Ok(avg);
+}
+
+pub fnc variance_population(Array<float> values) -> Result<float, String> {
+  if values.length == 0 {
+    return Err("population variance requires at least one value");
+  }
+
+  var float count = 0.0;
+  var float avg = 0.0;
+  var float m2 = 0.0;
+
+  for value of values {
+    count += 1.0;
+    let float delta = value - avg;
+    avg += delta / count;
+    let float delta2 = value - avg;
+    m2 += delta * delta2;
+  }
+
+  return Ok(m2 / count);
+}
+
+pub fnc variance_sample(Array<float> values) -> Result<float, String> {
+  if values.length < 2 {
+    return Err("sample variance requires at least two values");
+  }
+
+  var float count = 0.0;
+  var float avg = 0.0;
+  var float m2 = 0.0;
+
+  for value of values {
+    count += 1.0;
+    let float delta = value - avg;
+    avg += delta / count;
+    let float delta2 = value - avg;
+    m2 += delta * delta2;
+  }
+
+  return Ok(m2 / (count - 1.0));
+}
+
+pub fnc minimum(Array<float> values) -> Result<float, String> {
+  if values.length == 0 {
+    return Err("minimum requires at least one value");
+  }
+
+  var float current = values[0];
+  for value of values {
+    if value < current {
+      current = value;
+    }
+  }
+
+  return Ok(current);
+}
+
+pub fnc maximum(Array<float> values) -> Result<float, String> {
+  if values.length == 0 {
+    return Err("maximum requires at least one value");
+  }
+
+  var float current = values[0];
+  for value of values {
+    if value > current {
+      current = value;
+    }
+  }
+
+  return Ok(current);
+}

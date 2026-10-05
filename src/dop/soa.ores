@@ -1,0 +1,73 @@
+// Data-Oriented Programming primitives.
+// These structs contain data only; systems stay as free functions.
+
+define struct PointCloud3F64 as
+  Array<float> x;
+  Array<float> y;
+  Array<float> z;
+end
+
+define struct ParticleSetF64 as
+  Array<float> x;
+  Array<float> y;
+  Array<float> z;
+  Array<float> vx;
+  Array<float> vy;
+  Array<float> vz;
+  Array<float> mass;
+end
+
+pub fnc validate_point_cloud(PointCloud3F64 points) -> Result<bool, String> {
+  if points.x.length != points.y.length || points.x.length != points.z.length {
+    return Err("point-cloud SoA columns must have equal length");
+  }
+  return Ok(true);
+}
+
+pub fnc validate_particles(ParticleSetF64 particles) -> Result<bool, String> {
+  let int count = particles.x.length;
+
+  if particles.y.length != count ||
+     particles.z.length != count ||
+     particles.vx.length != count ||
+     particles.vy.length != count ||
+     particles.vz.length != count ||
+     particles.mass.length != count {
+    return Err("particle SoA columns must have equal length");
+  }
+
+  return Ok(true);
+}
+
+pub fnc squared_magnitude(PointCloud3F64 points) -> Result<Array<float>, String> {
+  validate_point_cloud(points)?;
+
+  var Array<float> output = new Array<float>();
+  var int i = 0;
+
+  for x of points.x {
+    let float y = points.y[i];
+    let float z = points.z[i];
+    output.push((x * x) + (y * y) + (z * z));
+    i += 1;
+  }
+
+  return Ok(output);
+}
+
+pub fnc kinetic_energy(ParticleSetF64 particles) -> Result<float, String> {
+  validate_particles(particles)?;
+
+  var float energy = 0.0;
+  var int i = 0;
+
+  for vx of particles.vx {
+    let float vy = particles.vy[i];
+    let float vz = particles.vz[i];
+    let float mass = particles.mass[i];
+    energy += 0.5 * mass * ((vx * vx) + (vy * vy) + (vz * vz));
+    i += 1;
+  }
+
+  return Ok(energy);
+}

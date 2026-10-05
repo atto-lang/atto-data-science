@@ -1,0 +1,71 @@
+import { sum, mean } from "../math/reductions.ores";
+
+define struct FloatColumn as
+  String name;
+  Array<float> values;
+  Array<bool> valid;
+end
+
+define struct FloatFrame as
+  Map<String, FloatColumn> columns;
+  int row_count;
+end
+
+pub fnc validate_float_column(FloatColumn column) -> Result<bool, String> {
+  if column.values.length != column.valid.length {
+    return Err("column values and validity mask must have equal length");
+  }
+  return Ok(true);
+}
+
+pub fnc validate_float_frame(FloatFrame frame) -> Result<bool, String> {
+  if frame.row_count < 0 {
+    return Err("frame row_count must be non-negative");
+  }
+
+  for column of frame.columns.values() {
+    validate_float_column(column)?;
+
+    if column.values.length != frame.row_count {
+      return Err("every column must have frame.row_count values");
+    }
+  }
+
+  return Ok(true);
+}
+
+pub fnc get_float_column(FloatFrame frame, String name) -> Option<FloatColumn> {
+  return frame.columns.get(name);
+}
+
+pub fnc column_sum(FloatColumn column) -> Result<float, String> {
+  validate_float_column(column)?;
+
+  var float total = 0.0;
+  var int i = 0;
+
+  for value of column.values {
+    if column.valid[i] {
+      total += value;
+    }
+    i += 1;
+  }
+
+  return Ok(total);
+}
+
+pub fnc column_mean(FloatColumn column) -> Result<float, String> {
+  validate_float_column(column)?;
+
+  var Array<float> present = new Array<float>();
+  var int i = 0;
+
+  for value of column.values {
+    if column.valid[i] {
+      present.push(value);
+    }
+    i += 1;
+  }
+
+  return mean(present);
+}

@@ -1,0 +1,82 @@
+import { sqrt } from "./scalar.ores";
+import { dot } from "./reductions.ores";
+
+pub fnc map_float(Array<float> values, (float) => float mapper) -> Array<float> {
+  var Array<float> out = new Array<float>();
+  for value of values {
+    out.push(mapper(value));
+  }
+  return out;
+}
+
+pub fnc filter_float(Array<float> values, (float) => bool predicate) -> Array<float> {
+  var Array<float> out = new Array<float>();
+  for value of values {
+    if predicate(value) {
+      out.push(value);
+    }
+  }
+  return out;
+}
+
+pub fnc scale(Array<float> values, float factor) -> Array<float> {
+  var Array<float> out = new Array<float>();
+  for value of values {
+    out.push(value * factor);
+  }
+  return out;
+}
+
+pub fnc add(Array<float> left, Array<float> right) -> Result<Array<float>, String> {
+  if left.length != right.length {
+    return Err("add requires arrays with equal length");
+  }
+
+  var Array<float> out = new Array<float>();
+  var int i = 0;
+  for value of left {
+    out.push(value + right[i]);
+    i += 1;
+  }
+  return Ok(out);
+}
+
+pub fnc hadamard(Array<float> left, Array<float> right) -> Result<Array<float>, String> {
+  if left.length != right.length {
+    return Err("hadamard requires arrays with equal length");
+  }
+
+  var Array<float> out = new Array<float>();
+  var int i = 0;
+  for value of left {
+    out.push(value * right[i]);
+    i += 1;
+  }
+  return Ok(out);
+}
+
+// BLAS-style y + a*x primitive.
+pub fnc axpy(float a, Array<float> x, Array<float> y) -> Result<Array<float>, String> {
+  if x.length != y.length {
+    return Err("axpy requires arrays with equal length");
+  }
+
+  var Array<float> out = new Array<float>();
+  var int i = 0;
+  for value of x {
+    out.push((a * value) + y[i]);
+    i += 1;
+  }
+  return Ok(out);
+}
+
+pub fnc normalize_l2(Array<float> values) -> Result<Array<float>, String> {
+  let float norm_squared = dot(values, values)?;
+  let float norm = sqrt(norm_squared)?;
+
+  if norm == 0.0 {
+    return Err("cannot normalize the zero vector");
+  }
+
+  return Ok(scale(values, 1.0 / norm));
+}

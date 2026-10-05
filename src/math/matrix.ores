@@ -1,0 +1,68 @@
+import { dot } from "./reductions.ores";
+
+define struct DenseMatrixF64 as
+  int rows;
+  int cols;
+  Array<float> values;
+end
+
+pub fnc validate_matrix(DenseMatrixF64 matrix) -> Result<bool, String> {
+  if matrix.rows < 0 || matrix.cols < 0 {
+    return Err("matrix dimensions must be non-negative");
+  }
+
+  if matrix.values.length != matrix.rows * matrix.cols {
+    return Err("matrix storage length does not match rows * cols");
+  }
+
+  return Ok(true);
+}
+
+pub fnc matrix_index(DenseMatrixF64 matrix, int row, int col) -> Result<int, String> {
+  if row < 0 || row >= matrix.rows {
+    return Err("row index out of bounds");
+  }
+  if col < 0 || col >= matrix.cols {
+    return Err("column index out of bounds");
+  }
+  return Ok((row * matrix.cols) + col);
+}
+
+pub fnc matrix_get(DenseMatrixF64 matrix, int row, int col) -> Result<float, String> {
+  let int index = matrix_index(matrix, row, col)?;
+  return Ok(matrix.values[index]);
+}
+
+pub fnc matvec(DenseMatrixF64 matrix, Array<float> vector) -> Result<Array<float>, String> {
+  validate_matrix(matrix)?;
+
+  if vector.length != matrix.cols {
+    return Err("matvec vector length must equal matrix column count");
+  }
+
+  var Array<float> out = new Array<float>();
+  var int row = 0;
+
+  loop {
+    if row >= matrix.rows {
+      break;
+    }
+
+    var float total = 0.0;
+    var int col = 0;
+
+    loop {
+      if col >= matrix.cols {
+        break;
+      }
+      let int index = (row * matrix.cols) + col;
+      total += matrix.values[index] * vector[col];
+      col += 1;
+    }
+
+    out.push(total);
+    row += 1;
+  }
+
+  return Ok(out);
+}
