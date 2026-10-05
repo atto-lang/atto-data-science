@@ -37,6 +37,12 @@ For normalized embeddings, cosine ranking reduces to dot-product ranking. Applic
 
 Dimensions alone do not make two embeddings comparable. Batches carry `model_id` and `model_revision` so higher layers can reject accidental cross-model comparisons even when dimensions happen to match. Vector kernels remain deliberately model-agnostic; model-space policy belongs at the embedding-service boundary.
 
+## Backend contract
+
+`src/ml/model.ores` defines `EmbeddingBackend` as the low-level model execution boundary. It exposes model id/revision, output dimensions, maximum batch size, and one batch inference operation that fills caller-owned `rows * dimensions` storage.
+
+The interface is intentionally backend-neutral: ONNX, GGUF/native, device-specific, remote, or a future Oreslang tensor backend can implement the same contract. It is also intentionally synchronous at this layer. Actor ownership, request coalescing, deadlines, quotas, and Future/Awaitable completion belong in the runtime service wrapper rather than inside every inference engine.
+
 ## Embedding generation pipeline
 
 `TokenEmbeddingBatch` represents padded transformer hidden states as one flat `[batch, tokens, hidden]` buffer plus a separate boolean attention mask. Mean pooling writes directly into the caller-owned `[batch, hidden]` embedding buffer; optional normalization is fused into that operation.\n\nThe target runtime pipeline is:
