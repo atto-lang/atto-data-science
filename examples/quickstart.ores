@@ -5,8 +5,8 @@ pub routine main(): void {
   val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
   val List<float> doubled = scale(values, 2.0);
 
-  val Result<float, String> average = mean(&doubled);
-  val Result<float, String> variance = variance_sample(&doubled);
+  val Result<float, String> average = mean(doubled);
+  val Result<float, String> variance = variance_sample(doubled);
 
   stdio.stdout.write("mean=");
   stdio.stdout.println(average.expect("mean failed"));

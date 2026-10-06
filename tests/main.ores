@@ -26,12 +26,12 @@ fnc test_sqrt_negative(): TestOutcome {
 
 fnc test_sum(): TestOutcome {
   val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
-  return expect_near_float(sum(&values), 10.0, 0.000001, "sum must equal 10");
+  return expect_near_float(sum(values), 10.0, 0.000001, "sum must equal 10");
 }
 
 fnc test_mean(): TestOutcome {
   val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
-  val Result<float, String> result = mean(&values);
+  val Result<float, String> result = mean(values);
   if result.is_err(); do
     return fail("mean returned Err");
   fi
@@ -40,13 +40,13 @@ fnc test_mean(): TestOutcome {
 
 fnc test_mean_empty(): TestOutcome {
   val List<float> values = arr[];
-  val Result<float, String> result = mean(&values);
+  val Result<float, String> result = mean(values);
   return expect_true(result.is_err(), "empty mean must return Err");
 }
 
 fnc test_variance(): TestOutcome {
   val List<float> values = arr[1.0, 2.0, 3.0, 4.0];
-  val Result<float, String> population = variance_population(&values);
+  val Result<float, String> population = variance_population(values);
   if population.is_err(); do
     return fail("population variance returned Err");
   fi
@@ -61,7 +61,7 @@ fnc test_variance(): TestOutcome {
     return population_check;
   fi
 
-  val Result<float, String> sample = variance_sample(&values);
+  val Result<float, String> sample = variance_sample(values);
   if sample.is_err(); do
     return fail("sample variance returned Err");
   fi
@@ -77,7 +77,7 @@ fnc test_variance(): TestOutcome {
 fnc test_dot_and_shape_error(): TestOutcome {
   val List<float> left = arr[1.0, 2.0, 3.0];
   val List<float> right = arr[4.0, 5.0, 6.0];
-  val Result<float, String> result = dot(&left, &right);
+  val Result<float, String> result = dot(left, right);
   if result.is_err(); do
     return fail("dot returned Err for equal shapes");
   fi
@@ -93,14 +93,14 @@ fnc test_dot_and_shape_error(): TestOutcome {
   fi
 
   val List<float> short = arr[1.0];
-  val Result<float, String> mismatch = dot(&left, &short);
+  val Result<float, String> mismatch = dot(left, short);
   return expect_true(mismatch.is_err(), "dot must reject shape mismatch");
 }
 
 fnc test_min_max(): TestOutcome {
   val List<float> values = arr[8.0, 0.0 - 4.0, 3.0, 11.0];
 
-  val Result<float, String> min_result = minimum(&values);
+  val Result<float, String> min_result = minimum(values);
   if min_result.is_err(); do
     return fail("minimum returned Err");
   fi
@@ -114,7 +114,7 @@ fnc test_min_max(): TestOutcome {
     return min_check;
   fi
 
-  val Result<float, String> max_result = maximum(&values);
+  val Result<float, String> max_result = maximum(values);
   if max_result.is_err(); do
     return fail("maximum returned Err");
   fi
@@ -125,7 +125,7 @@ fnc test_scale_and_normalize(): TestOutcome {
   val List<float> source = arr[1.0, 2.0, 3.0];
   val List<float> scaled = scale(source, 2.0);
   val TestOutcome scale_check = expect_near_float(
-    sum(&scaled),
+    sum(scaled),
     12.0,
     0.000001,
     "scale must double the vector sum"
@@ -140,7 +140,7 @@ fnc test_scale_and_normalize(): TestOutcome {
   fi
 
   val List<float> unit = normalized.unwrap();
-  val Result<float, String> norm_squared = dot(&unit, &unit);
+  val Result<float, String> norm_squared = dot(unit, unit);
   if norm_squared.is_err(); do
     return fail("dot failed for normalized vector");
   fi
@@ -157,7 +157,7 @@ fnc test_matvec(): TestOutcome {
   val List<float> vector = arr[5.0, 6.0];
   val List<float> output = arr[0.0, 0.0];
 
-  val Result<List<float>, String> result = matvec_into(&matrix, &vector, output);
+  val Result<List<float>, String> result = matvec_into(matrix, vector, output);
   if result.is_err(); do
     return fail("matvec returned Err");
   fi
@@ -178,7 +178,7 @@ fnc test_nullable_column_mean(): TestOutcome {
     arr[true, false, true]
   );
 
-  val Result<float, String> result = column_mean(&column);
+  val Result<float, String> result = column_mean(column);
   if result.is_err(); do
     return fail("column_mean returned Err");
   fi
@@ -197,7 +197,7 @@ fnc test_particle_energy(): TestOutcome {
     arr[2.0]
   );
 
-  val Result<float, String> result = kinetic_energy(&particles);
+  val Result<float, String> result = kinetic_energy(particles);
   if result.is_err(); do
     return fail("kinetic_energy returned Err");
   fi
@@ -225,7 +225,7 @@ pub routine main(): void {
   );
 
   val TestOptions options = new TestOptions("", false, true);
-  val RunSummary summary = run_suite(&suite, &options);
-  require_success(&summary);
+  val RunSummary summary = run_suite(suite, options);
+  require_success(summary);
   return;
 }

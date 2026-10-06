@@ -12,11 +12,23 @@ The public API should remain concise enough for exploratory work while the stora
 
 Core algorithms and tests live in `.ores` files. Java is not the implementation language for this library. Runtime/compiler intrinsics may later optimize recognized kernels while preserving the Oreslang reference semantics.
 
-### Borrowed reads, owned writes
+### Pointer-free reference semantics
 
-Read-only sequence kernels accept borrowed concrete lists such as `&List<float>` on the current core surface. `@Structural` is a type-compatibility escape hatch for intentionally shape-matched class/interface/trait contracts; it is not an ownership or read-only marker for ordinary collections. Transforms take ownership of mutable buffers and return them. Matrix, filtering, and SoA kernels accept caller-provided destination buffers rather than requiring hidden allocation.
+Oreslang userland does not expose C/C++/Rust-style pointers. Objects and collection values are reference values, and ordinary parameter passing passes that reference without copying the underlying object.
 
-This keeps access/ownership semantics separate from nominal-versus-structural type compatibility and remains a clean lowering boundary for a future native contiguous `Array<T>`.
+Accordingly, public Oreslang APIs must not use `&T`, `T*`, `&value`, unary `*value`, `&mut T`, or pointer arithmetic. The `*` token is still used for ordinary numeric multiplication; it is never a userland dereference operator.
+
+Ownership and lifetime operations are explicit and semantic rather than encoded as pointer syntax:
+
+- `rt copy value` creates an explicit copy;
+- `rt borrow value` creates an explicit temporary borrow/capability when one is actually needed;
+- `rt take value` explicitly transfers ownership;
+- `rt share value` explicitly creates shared ownership;
+- `mut` marks mutation authority for a referenced value.
+
+A read-only parameter therefore uses a normal type such as `List<float> values`, not `&List<float> values`. A mutable destination uses a form such as `List<float> mut output`, not `&mut List<float>`. `@Structural` is a type-compatibility mechanism only; it is not an ownership or read-only marker.
+
+The compiler, OresVM, FFI layer, SIMD backend, and GPU backend may lower safe reference/buffer operations to raw addresses, aligned loads, device pointers, and address arithmetic internally. Those capabilities stay below the Oreslang source-language boundary. This preserves contiguous SoA layouts, vectorization, cache-aware traversal, zero-copy views where safe, and CPU/GPU placement without exposing raw pointer authority to application code.
 
 ### Columnar by default
 
