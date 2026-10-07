@@ -50,3 +50,17 @@ See [Architecture](docs/ARCHITECTURE.md) and [Roadmap](ROADMAP.md).
 ## Compiler PR checkpoint (2026-10-06)
 
 A [repository-specific compiler compatibility matrix](docs/compiler-pr-sync.md) tracks the 10 newest `oreslang-source.java` PRs. They remain unmerged upstream; existing demos, build flags, and stable compiler references stay unchanged pending exact-SHA conformance testing.
+
+## Runner CI and native-suite coverage
+
+The `Test runner contracts` workflow checks shell syntax and uses a compiler
+test double to prove repository-root execution, paths containing spaces,
+explicit compiler selection, PATH fallback, exact output/exit-code propagation,
+and failure when the compiler is missing. It uses read-only permissions and no
+secrets. The runner now works when launched outside this repository.
+
+This is a launcher gate, not numerical conformance evidence. A 2026-10-07 probe
+against compiler `5ffc52d9297d175307094d530293c69f1cafc7cd` stopped at the
+unexported `TestCase` class imported from `vendor/oreslang/testing.ores`.
+Resolve exports and subsequent ownership diagnostics, then run the complete
+native numerical suite before selecting a compiler pin and enabling runtime CI.
