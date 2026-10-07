@@ -46,3 +46,7 @@ ORESLANG_BIN=/path/to/oreslang ./scripts/test.sh
 The suite in `tests/main.ores` covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, and SoA particle energy.
 
 See [Architecture](docs/ARCHITECTURE.md) and [Roadmap](ROADMAP.md).
+
+## Compiler PR checkpoint (2026-10-06)
+
+A [repository-specific compiler compatibility matrix](docs/compiler-pr-sync.md) tracks the 10 newest `oreslang-source.java` PRs. They remain unmerged upstream; existing demos, build flags, and stable compiler references stay unchanged pending exact-SHA conformance testing.
