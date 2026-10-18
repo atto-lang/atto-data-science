@@ -69,6 +69,20 @@ class NdArrayAbiTests(unittest.TestCase):
             book.drop_owner("tensor", True)
         book.drop_owner("tensor", 10)
 
+    def test_recreated_lease_value_cannot_release_a_live_loan(self):
+        from verify_ndarray_layout import Lease
+        book=BorrowBook()
+        book.register("tensor",11)
+        live=book.borrow("tensor",11,mutable=True,start=0,end=32)
+        recreated=Lease(live.owner,live.generation,live.mutable,
+                        live.start,live.end,live.token)
+        with self.assertRaises(LayoutError):
+            book.release(recreated)
+        with self.assertRaises(LayoutError):
+            book.drop_owner("tensor",11)
+        book.release(live)
+        book.drop_owner("tensor",11)
+
     def test_invalid_release_type_is_protocol_error(self):
         book=BorrowBook()
         with self.assertRaises(LayoutError):
