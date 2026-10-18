@@ -75,6 +75,13 @@ pub fnc matrix_get(
     return Err("matrix index out of bounds");
   fi
 
+  // matrix_index checks logical bounds only. Before dereferencing a storage
+  // index, validate that the backing list matches the declared shape.
+  val Result<bool, String> storage_valid = validate_matrix(matrix);
+  if storage_valid.is_err(); do
+    return Err("matrix storage length does not match its shape");
+  fi
+
   return Ok(matrix.values[index_result.unwrap()]);
 }
 
