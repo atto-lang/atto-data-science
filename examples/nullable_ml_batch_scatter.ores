@@ -1,0 +1,52 @@
+// End-to-end reference for nullable data ingestion -> ML buffer -> VJP row scatter.
+// This is intended for the actual Oreslang guest, not a JS substitute.
+import class FloatColumn from '../src/data/columnar';
+import class DenseBatchF64 from '../src/pipeline/ml_batch_bridge';
+import fnc compact_valid_f64_into, scatter_add_f64_into from '../src/pipeline/ml_batch_bridge';
+
+pub routine main(): void {
+  val FloatColumn column = new FloatColumn(
+    "features",
+    arr[2.0, 999.0, 4.0, 6.0],
+    arr[true, false, true, true]
+  );
+  val List<float> values = arr[0.0, 0.0, 0.0, 0.0];
+  val List<int> row_ids = arr[0, 0, 0, 0];
+  val Result<DenseBatchF64, String> batch_result =
+      compact_valid_f64_into(column, values, row_ids);
+  if batch_result.is_err(); do
+    stdio.println("ORES_ML_BATCH_FAIL compact");
+    return;
+  fi
+  val DenseBatchF64 batch = batch_result.unwrap();
+  if batch.count != 3; do
+    stdio.println("ORES_ML_BATCH_FAIL count");
+    return;
+  fi
+  if values[0] != 2.0 || values[1] != 4.0 || values[2] != 6.0; do
+    stdio.println("ORES_ML_BATCH_FAIL values");
+    return;
+  fi
+  if row_ids[0] != 0 || row_ids[1] != 2 || row_ids[2] != 3; do
+    stdio.println("ORES_ML_BATCH_FAIL rows");
+    return;
+  fi
+  val List<float> gradient = arr[1.0, 3.0, 5.0, 7.0];
+  val List<int> repeated_rows = arr[0, 2, 2, 3];
+  val List<float> accumulated = arr[0.0, 0.0, 0.0, 0.0];
+  val List<float> scratch = arr[0.0, 0.0, 0.0, 0.0];
+  val Result<bool, String> result = scatter_add_f64_into(
+      gradient, repeated_rows, 4, accumulated, scratch
+  );
+  if result.is_err(); do
+    stdio.println("ORES_ML_BATCH_FAIL scatter");
+    return;
+  fi
+  if accumulated[0] != 1.0 || accumulated[1] != 0.0
+      || accumulated[2] != 8.0 || accumulated[3] != 7.0; do
+    stdio.println("ORES_ML_BATCH_FAIL gradients");
+    return;
+  fi
+  stdio.println("ORES_ML_BATCH_PASS");
+  return;
+}
