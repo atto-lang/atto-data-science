@@ -12,7 +12,40 @@ fnc count_values(List<float> values): int {
   return count;
 }
 
-NaNpub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
+// Checked integer-only shape product: never divide through a float.
+// The current Java evaluator maps the '/' operator to double arithmetic.
+fnc checked_matrix_element_count(int rows, int cols): Result<int, String> {
+  if rows < 0; do
+    return Err("matrix row count must be non-negative");
+  fi
+  if cols < 0; do
+    return Err("matrix column count must be non-negative");
+  fi
+  let int addend = rows;
+  let int remaining = cols;
+  let int product = 0;
+  loop {
+    if remaining == 0; do
+      break;
+    fi
+    if remaining % 2 == 1; do
+      if addend > 9223372036854775807 - product; do
+        return Err("matrix dimension product exceeds signed i64");
+      fi
+      product = product + addend;
+    fi
+    remaining = remaining >> 1;
+    if remaining > 0; do
+      if addend > 9223372036854775807 - addend; do
+        return Err("matrix dimension product exceeds signed i64");
+      fi
+      addend = addend + addend;
+    fi
+  }
+  return Ok(product);
+}
+
+pub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
   if matrix.rows < 0; do
     return Err("matrix row count must be non-negative");
   fi
