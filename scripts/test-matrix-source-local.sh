@@ -15,6 +15,7 @@ root="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 [[ "$EXPECTED_SOURCE_TREE" =~ ^[0-9a-f]{40}$ ]] || fail "malformed root-tree identity"
 [[ "$EXPECTED_COMPILER_SHA256" =~ ^[0-9a-f]{64}$ ]] || fail "malformed compiler identity"
 [[ "$ORESLANG_BIN" = /* && -f "$ORESLANG_BIN" && -x "$ORESLANG_BIN" ]] || fail "reviewed executable absent"
+[[ ! -L "$ORESLANG_BIN" ]] || fail "compiler symlink is not an immutable binary pin"
 [[ "$MATRIX_EVIDENCE_DIR" = /* ]] || fail "evidence directory must be absolute"
 head_sha="$(git -C "$root" rev-parse --verify HEAD)"
 root_tree="$(git -C "$root" rev-parse --verify 'HEAD^{tree}')"
@@ -48,6 +49,17 @@ for test_name in matrix/short-storage matrix/valid-get matrix/overflow; do
 done
 grep -Eq '^ORES_TEST\|SUMMARY\|total=[0-9]+\|passed=[0-9]+\|failed=0\|' "$log" \
   || fail "missing fail-free test summary (log $log)"
+# Fail closed if the compiler changed between identity preflight and guest
+# execution. This does not transitively certify compiler dependencies.
+if command -v sha256sum >/dev/null 2>&1; then
+  actual_sha_after="$(sha256sum "$ORESLANG_BIN" | awk '{print $1}')"
+else
+  actual_sha_after="$(shasum -a 256 "$ORESLANG_BIN" | awk '{print $1}')"
+fi
+[[ "$actual_sha_after" = "$EXPECTED_COMPILER_SHA256" ]] || fail "compiler binary changed during execution"
+[[ "$(git -C "$root" rev-parse --verify HEAD)" = "$EXPECTED_SOURCE_SHA" ]] || fail "source HEAD changed during execution"
+[[ "$(git -C "$root" rev-parse --verify 'HEAD^{tree}')" = "$EXPECTED_SOURCE_TREE" ]] || fail "source tree changed during execution"
+[[ -z "$(git -C "$root" status --porcelain --untracked-files=all)" ]] || fail "source checkout modified during guest execution"
 printf 'MATRIX_GUEST_EXACT_SOURCE=%s\n' "$head_sha"
 printf 'MATRIX_GUEST_ROOT_TREE=%s\n' "$root_tree"
 printf 'MATRIX_GUEST_COMPILER_SHA256=%s\n' "$compiler_sha"
