@@ -1,0 +1,133 @@
+// Oreslang-native nullable column -> dense ML batch bridge.
+// P0 CPU List<float> reference; no actor state, device allocation or autograd.
+// Destination buffers must be preallocated and must not alias each other or
+// source values. Validation finishes before any write (failure atomicity).
+import class FloatColumn from '../data/columnar';
+import fnc validate_float_column from '../data/columnar';
+
+define class DenseBatchF64 as
+  pub val List<float> values;
+  pub val List<int> source_rows;
+  pub val int count;
+end
+
+fnc batch_float_count(List<float> input): int {
+  let int n = 0;
+  for const value of input do
+    n = n + 1;
+  done
+  return n;
+}
+
+fnc batch_int_count(List<int> input): int {
+  let int n = 0;
+  for const value of input do
+    n = n + 1;
+  done
+  return n;
+}
+
+fnc batch_finite(float value): bool {
+  return (value - value) == 0.0;
+}
+
+// Materializes only present/valid rows in their original source order.
+// No partial writes on invalid masks, insufficient destination capacity,
+// unexpected aliases or non-finite selected input values.
+pub fnc compact_valid_f64_into(
+  FloatColumn column,
+  List<float> mut values_out,
+  List<int> mut source_rows_out
+): Result<DenseBatchF64, String> {
+  val Result<bool, String> valid = validate_float_column(column);
+  if valid.is_err(); do
+    return Err("invalid source column");
+  fi
+  if values_out is source_rows_out || values_out is column.values; do
+    return Err("batch buffers must not alias source or each other");
+  fi
+  val int capacity = batch_float_count(values_out);
+  if batch_int_count(source_rows_out) != capacity; do
+    return Err("destination lengths differ");
+  fi
+  let int needed = 0;
+  let int i = 0;
+  for const value of column.values do
+    if column.valid[i]; do
+      if !batch_finite(value); do
+        return Err("selected value must be finite");
+      fi
+      needed = needed + 1;
+    fi
+    i = i + 1;
+  done
+  if needed > capacity; do
+    return Err("batch destination capacity exceeded");
+  fi
+
+  i = 0;
+  let int write_index = 0;
+  for const value of column.values do
+    if column.valid[i]; do
+      values_out[write_index] = value;
+      source_rows_out[write_index] = i;
+      write_index = write_index + 1;
+    fi
+    i = i + 1;
+  done
+  return Ok(new DenseBatchF64(values_out, source_rows_out, write_index));
+}
+
+// Reverse of row compaction for accumulated gradients: duplicate source rows
+// add contributions instead of last-writer-wins. Prevalidation prevents
+// out-of-range/nonfinite input from causing a partial update.
+// Caller supplies scratch; gradient storage remains explicitly owned.
+pub fnc scatter_add_f64_into(
+  List<float> gradients,
+  List<int> source_rows,
+  int count,
+  List<float> mut destination,
+  List<float> mut scratch
+): Result<bool, String> {
+  val int input_capacity = batch_float_count(gradients);
+  val int rows_capacity = batch_int_count(source_rows);
+  val int output_count = batch_float_count(destination);
+  if count < 0 || count > input_capacity || count > rows_capacity; do
+    return Err("invalid scatter count");
+  fi
+  if batch_float_count(scratch) != output_count; do
+    return Err("scatter scratch length mismatch");
+  fi
+  if gradients is destination || gradients is scratch || destination is scratch; do
+    return Err("scatter gradient buffers may not alias");
+  fi
+  let int i = 0;
+  for const current of destination do
+    if !batch_finite(current); do
+      return Err("destination contains nonfinite value");
+    fi
+  done
+  for int j = 0; j < count; j++ do
+    if source_rows[j] < 0 || source_rows[j] >= output_count; do
+      return Err("scatter index out of bounds");
+    fi
+    if !batch_finite(gradients[j]); do
+      return Err("nonfinite scatter contribution");
+    fi
+  done
+  for int j = 0; j < output_count; j++ do
+    scratch[j] = destination[j];
+  done
+  for int j = 0; j < count; j++ do
+    val int row = source_rows[j];
+    val float updated = scratch[row] + gradients[j];
+    if !batch_finite(updated); do
+      return Err("scatter accumulation overflow");
+    fi
+    scratch[row] = updated;
+  done
+  for int j = 0; j < output_count; j++ do
+    destination[j] = scratch[j];
+  done
+  return Ok(true);
+}
