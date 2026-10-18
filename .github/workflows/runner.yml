@@ -24,3 +24,7 @@ jobs:
           done < <(find scripts -type f -name '*.sh' -print0)
       - name: Verify runner failure and invocation contracts
         run: bash scripts/test-runner.sh
+      - name: Enforce matrix source and canonical testing-module contracts
+        run: |
+          python3 -m unittest discover -s tests -p 'test_matrix_overflow_contract.py' -v
+          python3 -m unittest discover -s tests -p 'test_testing_module_exports.py' -v
