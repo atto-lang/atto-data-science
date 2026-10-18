@@ -101,7 +101,6 @@ pub fnc scatter_add_f64_into(
   if gradients is destination || gradients is scratch || destination is scratch; do
     return Err("scatter gradient buffers may not alias");
   fi
-  let int i = 0;
   for const current of destination do
     if !batch_finite(current); do
       return Err("destination contains nonfinite value");
