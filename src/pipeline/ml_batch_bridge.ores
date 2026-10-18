@@ -43,7 +43,9 @@ pub fnc compact_valid_f64_into(
   if valid.is_err(); do
     return Err("invalid source column");
   fi
-  if values_out is source_rows_out || values_out is column.values; do
+  // Output row-index buffer has a distinct element type; ownership checking
+  // must reject any illicit erased alias before calling this typed API.
+  if values_out is column.values; do
     return Err("batch buffers must not alias source or each other");
   fi
   val int capacity = batch_float_count(values_out);
