@@ -79,6 +79,21 @@ class MatrixIndexContractTests(unittest.TestCase):
             self.assertEqual(checked_product(a, b),
                              exact if exact <= I64_MAX else None)
 
+    def test_valid_and_boundary_factor_pairs(self):
+        rng = random.Random(20261018)
+        for _ in range(25000):
+            a = rng.randint(0, I64_MAX)
+            upper = I64_MAX if a == 0 else I64_MAX // a
+            b = rng.randint(0, upper)
+            self.assertEqual(checked_product(a, b), a * b)
+        for _ in range(25000):
+            b = rng.randint(2, 10000)
+            q = I64_MAX // b
+            for a in (max(0, q - 1), q, q + 1, min(I64_MAX, q + 2)):
+                exact = a * b
+                self.assertEqual(checked_product(a, b),
+                                 exact if exact <= I64_MAX else None)
+
 
 if __name__ == "__main__":
     unittest.main()
