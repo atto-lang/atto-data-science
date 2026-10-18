@@ -6,6 +6,7 @@ import fnc sum, dot, mean, variance_population, variance_sample, minimum, maximu
 import fnc scale, normalize_l2 from '../src/math/vector';
 import class DenseMatrixF64 from '../src/math/matrix';
 import fnc matvec_into from '../src/math/matrix';
+import fnc validate_matrix, matrix_index, matrix_get from '../src/math/matrix';
 import class FloatColumn from '../src/data/columnar';
 import fnc column_mean from '../src/data/columnar';
 import class ParticleSetF64 from '../src/dop/soa';
@@ -171,6 +172,41 @@ fnc test_matvec(): TestOutcome {
   return expect_near_float(actual[1], 39.0, 0.000001, "matvec row 1");
 }
 
+fnc test_matrix_bad_backing_storage(): TestOutcome {
+  val DenseMatrixF64 truncated = new DenseMatrixF64(
+    2, 2, arr[1.0]
+  );
+  val Result<float, String> result = matrix_get(truncated, 0, 1);
+  return expect_true(result.is_err(), "matrix_get must reject short backing storage");
+}
+
+fnc test_matrix_valid_get(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(
+    1, 1, arr[5.0]
+  );
+  val Result<float, String> result = matrix_get(matrix, 0, 0);
+  if result.is_err(); do
+    return fail("matrix_get rejected a valid 1x1 matrix");
+  fi
+  return expect_near_float(result.unwrap(), 5.0, 0.000001, "valid matrix element");
+}
+
+fnc test_matrix_shape_product_overflow(): TestOutcome {
+  val DenseMatrixF64 huge = new DenseMatrixF64(
+    3037000500, 3037000500, arr[]
+  );
+  val Result<bool, String> shape = validate_matrix(huge);
+  if !shape.is_err(); do
+    return fail("matrix shape multiplication overflow was accepted");
+  fi
+  val Result<int, String> index = matrix_index(huge, 0, 0);
+  if !index.is_err(); do
+    return fail("matrix index overflow was accepted");
+  fi
+  val Result<float, String> read_result = matrix_get(huge, 0, 0);
+  return expect_true(read_result.is_err(), "matrix_get must reject overflowing shape");
+}
+
 fnc test_nullable_column_mean(): TestOutcome {
   val FloatColumn column = new FloatColumn(
     "x",
@@ -219,6 +255,9 @@ pub routine main(): void {
       new TestCase("reductions/min-max", test_min_max, false, ""),
       new TestCase("vector/scale-normalize", test_scale_and_normalize, false, ""),
       new TestCase("matrix/matvec", test_matvec, false, ""),
+      new TestCase("matrix/short-storage", test_matrix_bad_backing_storage, false, ""),
+      new TestCase("matrix/valid-get", test_matrix_valid_get, false, ""),
+      new TestCase("matrix/overflow", test_matrix_shape_product_overflow, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
       new TestCase("dop/particle-energy", test_particle_energy, false, "")
     ]
