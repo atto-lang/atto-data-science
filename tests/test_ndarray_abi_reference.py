@@ -5,7 +5,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from verify_ndarray_layout import (BorrowBook, LayoutError, checked_elements,
-                                  contiguous_bytes, validate_view)
+                                  contiguous_bytes, validate_view,
+                                  validate_unique_write_view)
 
 
 class NdArrayAbiTests(unittest.TestCase):
@@ -24,6 +25,50 @@ class NdArrayAbiTests(unittest.TestCase):
     def test_strided_transpose_with_valid_owned_extent(self):
         self.assertEqual(validate_view((3,2),(8,24),0,48,8),(0,48))
         self.assertEqual(validate_view((3,2),(-8,24),16,48,8),(0,48))
+
+    def test_writable_broadcast_view_rejected_but_read_only_permitted(self):
+        self.assertEqual(validate_view((3,),(0,),0,8,8),(0,8))
+        with self.assertRaisesRegex(LayoutError,"overlapping"):
+            validate_unique_write_view((3,),(0,),0,8,8)
+        book=BorrowBook(); book.register("tensor",1)
+        r=book.borrow_view("tensor",1,mutable=False,shape=(3,),
+                           strides_bytes=(0,),offset_bytes=0,
+                           storage_bytes=8,itemsize=8)
+        self.assertEqual((r.start,r.end),(0,8))
+        with self.assertRaisesRegex(LayoutError,"overlapping"):
+            book.borrow_view("tensor",1,mutable=True,shape=(3,),
+                             strides_bytes=(0,),offset_bytes=0,
+                             storage_bytes=8,itemsize=8)
+        book.release(r)
+        book.drop_owner("tensor",1)
+
+    def test_mutable_transpose_and_negative_strides_non_aliasing(self):
+        self.assertEqual(validate_unique_write_view((3,2),(8,24),0,48,8),(0,48))
+        self.assertEqual(validate_unique_write_view((3,2),(-8,24),16,48,8),(0,48))
+        book=BorrowBook(); book.register("tensor",2)
+        writer=book.borrow_view("tensor",2,mutable=True,shape=(3,2),
+                                strides_bytes=(-8,24),offset_bytes=16,
+                                storage_bytes=48,itemsize=8)
+        with self.assertRaises(LayoutError):
+            book.borrow_view("tensor",2,mutable=False,shape=(1,),
+                             strides_bytes=(8,),offset_bytes=16,
+                             storage_bytes=48,itemsize=8)
+        book.release(writer)
+        book.drop_owner("tensor",2)
+
+    def test_overlapping_nonbroadcast_strides_fail_closed(self):
+        self.assertEqual(validate_view((2,2),(8,8),0,24,8),(0,24))
+        for dims,strides,offset,storage in [
+            ((2,2),(8,8),0,24),
+            ((2,3),(16,8),0,40),
+            ((2,2),(-8,8),8,24),
+        ]:
+            with self.subTest(shape=dims,strides=strides), self.assertRaises(LayoutError):
+                validate_unique_write_view(dims,strides,offset,storage,8)
+
+    def test_empty_and_scalar_writers_preserve_bounds(self):
+        self.assertEqual(validate_unique_write_view((0,3),(0,8),8,16,8),(8,8))
+        self.assertEqual(validate_unique_write_view((),(),0,8,8),(0,8))
 
     def test_oob_unaligned_and_rank_mismatch_rejected(self):
         for params in [((3,2),(8,24),0,40,8),
