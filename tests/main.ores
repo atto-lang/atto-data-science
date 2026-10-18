@@ -6,6 +6,7 @@ import fnc sum, dot, mean, variance_population, variance_sample, minimum, maximu
 import fnc scale, normalize_l2 from '../src/math/vector';
 import class DenseMatrixF64 from '../src/math/matrix';
 import fnc matvec_into from '../src/math/matrix';
+import fnc validate_matrix from '../src/math/matrix';
 import class FloatColumn from '../src/data/columnar';
 import fnc column_mean from '../src/data/columnar';
 import class ParticleSetF64 from '../src/dop/soa';
@@ -171,6 +172,19 @@ fnc test_matvec(): TestOutcome {
   return expect_near_float(actual[1], 39.0, 0.000001, "matvec row 1");
 }
 
+fnc test_matrix_shape_product_bounds(): TestOutcome {
+  val DenseMatrixF64 denied = new DenseMatrixF64(
+    3037000500, 3037000500, arr[]
+  );
+  val Result<bool, String> rejected = validate_matrix(denied);
+  if !rejected.is_err(); do
+    return fail("overflow-risk matrix dimensions were admitted");
+  fi
+  val DenseMatrixF64 zero = new DenseMatrixF64(0, 3037000499, arr[]);
+  val Result<bool, String> admitted = validate_matrix(zero);
+  return expect_true(admitted.is_ok(), "zero extent must keep zero-size matrix valid");
+}
+
 fnc test_nullable_column_mean(): TestOutcome {
   val FloatColumn column = new FloatColumn(
     "x",
@@ -219,6 +233,7 @@ pub routine main(): void {
       new TestCase("reductions/min-max", test_min_max, false, ""),
       new TestCase("vector/scale-normalize", test_scale_and_normalize, false, ""),
       new TestCase("matrix/matvec", test_matvec, false, ""),
+      new TestCase("matrix/shape-product-bounds", test_matrix_shape_product_bounds, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
       new TestCase("dop/particle-energy", test_particle_energy, false, "")
     ]
