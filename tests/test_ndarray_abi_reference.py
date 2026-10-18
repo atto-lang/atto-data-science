@@ -52,6 +52,30 @@ class NdArrayAbiTests(unittest.TestCase):
         with self.assertRaises(LayoutError):
             b.borrow("actor1",2,mutable=False,start=0,end=8)
 
+    def test_owner_reuse_requires_strictly_new_generation(self):
+        book=BorrowBook()
+        book.register("tensor", 9)
+        first=book.borrow("tensor", 9, mutable=False, start=0, end=8)
+        book.release(first)
+        book.drop_owner("tensor", 9)
+        with self.assertRaises(LayoutError):
+            book.register("tensor", 9)
+        with self.assertRaises(LayoutError):
+            book.register("tensor", 8)
+        book.register("tensor", 10)
+        with self.assertRaises(LayoutError):
+            book.borrow("tensor", 9, mutable=False, start=0, end=8)
+        with self.assertRaises(LayoutError):
+            book.drop_owner("tensor", True)
+        book.drop_owner("tensor", 10)
+
+    def test_invalid_release_type_is_protocol_error(self):
+        book=BorrowBook()
+        with self.assertRaises(LayoutError):
+            book.release([])
+        with self.assertRaises(LayoutError):
+            book.release({"owner":"fabricated"})
+
     def test_old_generation_and_double_release_refused(self):
         b=BorrowBook(); b.register("array",7)
         with self.assertRaises(LayoutError):
