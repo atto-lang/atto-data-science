@@ -21,8 +21,20 @@ pub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
     return Err("matrix column count must be non-negative");
   fi
 
-  if count_values(matrix.values) != matrix.rows * matrix.cols; do
-    return Err("matrix storage length does not match rows * cols");
+  // Compare via quotient/remainder instead of multiplying untrusted
+  // dimensions. rows * cols may overflow before the length comparison.
+  val int count = count_values(matrix.values);
+  if matrix.cols == 0; do
+    if count != 0; do
+      return Err("zero-column matrix must have empty storage");
+    fi
+  else
+    if count % matrix.cols != 0; do
+      return Err("matrix storage is not divisible by column count");
+    fi
+    if count / matrix.cols != matrix.rows; do
+      return Err("matrix storage length does not match shape");
+    fi
   fi
 
   return Ok(true);
@@ -33,6 +45,12 @@ pub fnc matrix_index(
   int row,
   int col
 ): Result<int, String> {
+  // The index is meaningful only for verified backing storage.
+  val Result<bool, String> shape_ok = validate_matrix(matrix);
+  if shape_ok.is_err(); do
+    return Err("invalid matrix storage");
+  fi
+
   if row < 0; do
     return Err("row index out of bounds");
   fi
