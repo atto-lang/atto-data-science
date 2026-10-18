@@ -5,6 +5,8 @@ on:
       - "src/pipeline/ml_batch_bridge.ores"
       - "examples/nullable_ml_batch_scatter.ores"
       - "tests/ml_batch_bridge_oracle.test.mjs"
+      - "tests/ml_supervised_batch_oracle.test.mjs"
+      - "examples/supervised_ml_batch.ores"
       - "docs/ML_BATCH_PIPELINE_V1.md"
       - ".github/workflows/ml-batch-bridge.yml"
   workflow_dispatch:
@@ -20,6 +22,6 @@ jobs:
         with:
           node-version: "22"
       - name: Run independent reference cases
-        run: node --test tests/ml_batch_bridge_oracle.test.mjs
+        run: node --test tests/ml_batch_bridge_oracle.test.mjs tests/ml_supervised_batch_oracle.test.mjs
       - name: Mark evidence limitations
         run: echo "HOST_ONLY; ORESLANG_GUEST_EXECUTION=NOT_EXECUTED; TENSOR_ACCELERATION=NOT_EXECUTED"
