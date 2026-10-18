@@ -5,7 +5,7 @@ import fnc sqrt from '../src/math/scalar';
 import fnc sum, dot, mean, variance_population, variance_sample, minimum, maximum from '../src/math/reductions';
 import fnc scale, normalize_l2 from '../src/math/vector';
 import class DenseMatrixF64 from '../src/math/matrix';
-import fnc matvec_into from '../src/math/matrix';
+import fnc matvec_into, validate_matrix, matrix_index from '../src/math/matrix';
 import class FloatColumn from '../src/data/columnar';
 import fnc column_mean from '../src/data/columnar';
 import class ParticleSetF64 from '../src/dop/soa';
@@ -171,6 +171,35 @@ fnc test_matvec(): TestOutcome {
   return expect_near_float(actual[1], 39.0, 0.000001, "matvec row 1");
 }
 
+fnc test_matrix_shape_overflow_rejected(): TestOutcome {
+  // Matrices are finite backed: giant claimed shapes must never wrap into
+  // a valid small storage length, even with malicious dimensions.
+  val DenseMatrixF64 invalid = new DenseMatrixF64(
+    2147483647, 2147483647, arr[1.0]
+  );
+  val Result<bool, String> checked = validate_matrix(invalid);
+  if !checked.is_err(); do
+    return fail("giant shape with one item must be rejected");
+  fi
+  val Result<int, String> index = matrix_index(invalid, 0, 0);
+  return expect_true(index.is_err(), "matrix_index must reject invalid backing shape");
+}
+
+fnc test_matrix_zero_columns_require_empty_backing(): TestOutcome {
+  val DenseMatrixF64 invalid = new DenseMatrixF64(3, 0, arr[1.0]);
+  val Result<bool, String> checked = validate_matrix(invalid);
+  if !checked.is_err(); do
+    return fail("zero-column storage must be empty");
+  fi
+  val DenseMatrixF64 empty = new DenseMatrixF64(3, 0, arr[]);
+  val Result<bool, String> verified = validate_matrix(empty);
+  if verified.is_err(); do
+    return fail("zero-column empty matrix must pass shape validation");
+  fi
+  return expect_true(matrix_index(empty, 0, 0).is_err(),
+                     "zero-column matrix cannot have a valid column index");
+}
+
 fnc test_nullable_column_mean(): TestOutcome {
   val FloatColumn column = new FloatColumn(
     "x",
@@ -219,6 +248,8 @@ pub routine main(): void {
       new TestCase("reductions/min-max", test_min_max, false, ""),
       new TestCase("vector/scale-normalize", test_scale_and_normalize, false, ""),
       new TestCase("matrix/matvec", test_matvec, false, ""),
+      new TestCase("matrix/shape-overflow", test_matrix_shape_overflow_rejected, false, ""),
+      new TestCase("matrix/zero-column", test_matrix_zero_columns_require_empty_backing, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
       new TestCase("dop/particle-energy", test_particle_energy, false, "")
     ]
