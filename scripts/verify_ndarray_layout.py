@@ -76,6 +76,30 @@ def validate_view(shape, strides_bytes, offset_bytes, storage_bytes, itemsize):
     return low, high
 
 
+def validate_unique_write_view(shape, strides_bytes, offset_bytes,
+                               storage_bytes, itemsize):
+    """Sufficient, deliberately conservative proof of non-aliasing layout.
+
+    Sort axes by absolute stride. Each outer axis must be separated by
+    at least the entire footprint of all faster-changing axes. This may
+    reject unusual safe layouts; it must never admit a broadcast writer.
+    """
+    start, stop = validate_view(shape, strides_bytes, offset_bytes,
+                                storage_bytes, itemsize)
+    if checked_elements(shape) == 0:
+        return start, stop
+    span = itemsize
+    axes = sorted((abs(stride), dim) for dim, stride in
+                  zip(shape, strides_bytes) if dim > 1)
+    for stride, dim in axes:
+        if stride < span:
+            raise LayoutError("mutable view has overlapping element addresses")
+        span += (dim - 1) * stride
+        if span > LIMIT:
+            raise LayoutError("mutable view address-span overflow")
+    return start, stop
+
+
 @dataclass(frozen=True, eq=False)
 class Lease:
     owner: str
@@ -119,6 +143,20 @@ class BorrowBook:
         candidate = Lease(owner, generation, mutable, start, end, self._next_token)
         self._leases.add(candidate)
         return candidate
+
+    def borrow_view(self, owner, generation, *, mutable, shape, strides_bytes,
+                    offset_bytes, storage_bytes, itemsize):
+        """Admit a typed view only after exact storage extent and alias checks.
+
+        Caller must provide the owner's REAL validated storage extent;
+        the reference book does not authenticate a backend buffer.
+        """
+        if type(mutable) is not bool:
+            raise LayoutError("mutable authorization must be boolean")
+        check = validate_unique_write_view if mutable else validate_view
+        start, stop = check(shape, strides_bytes, offset_bytes,
+                            storage_bytes, itemsize)
+        return self.borrow(owner, generation, mutable=mutable, start=start, end=stop)
 
     def release(self, lease):
         if type(lease) is not Lease or lease not in self._leases:
