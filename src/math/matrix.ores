@@ -21,6 +21,14 @@ pub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
     return Err("matrix column count must be non-negative");
   fi
 
+  // Compute row count * column count without overflowing a signed i64.
+  // A malformed descriptor must fail before the shape product or index.
+  if matrix.cols > 0; do
+    if matrix.rows > 9223372036854775807 / matrix.cols; do
+      return Err("matrix dimension product exceeds signed i64");
+    fi
+  fi
+
   if count_values(matrix.values) != matrix.rows * matrix.cols; do
     return Err("matrix storage length does not match rows * cols");
   fi
@@ -44,6 +52,11 @@ pub fnc matrix_index(
   fi
   if col >= matrix.cols; do
     return Err("column index out of bounds");
+  fi
+
+  val Result<bool, String> valid_shape = validate_matrix(matrix);
+  if valid_shape.is_err(); do
+    return Err("invalid matrix shape or storage");
   fi
 
   return Ok((row * matrix.cols) + col);
