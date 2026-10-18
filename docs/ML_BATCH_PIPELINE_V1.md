@@ -34,3 +34,13 @@ The batch bridge is an adapter, **not a second tensor implementation**; future `
 5. LLVM AOT parity, SIMD/columnar benchmarks, device-lease/copy tests and multi-shard distributed training remain independent gates.
 
 Never treat passing a JS oracle or a proposed source contract as proof of an Oreslang compiler, GPU or external Arrow/Parquet interoperability. Private Git trees must not be mirrored outside authorized organizations for CI without explicit authorization.
+
+## Supervised-batch hardening
+
+The additional CPU adapter `compact_supervised_f64_into` intersects feature and target validity masks, preserves original row IDs, and validates both column lengths, output capacities, input finiteness, and buffer aliasing before writing. The companion fixture `examples/supervised_ml_batch.ores` checks aligned rows and unchanged outputs after a capacity error; it has not yet been executed in an Oreslang compiler.
+
+Importantly, `DenseBatchF64` and `DenseSupervisedBatchF64` still contain caller-mutable `List<float>` references. A `pub val` field does not freeze the backing storage. They are **not sendable immutable tensor leases**. Cross-actor handoff must instead use verified ownership moves or frozen, lifetime-bound storage and an authenticated run/step/graph/microbatch/epoch/weight-version envelope.
+
+The reverse `scatter_add_f64_into` keeps the destination logically failure-atomic for input or arithmetic errors, but may modify scratch on failed accumulation. No current guarantee covers process crashes, unsafe concurrent mutation, or partial publication through an exceptional runtime memory fault.
+
+Open security incidents #22 and #77 in `oreslang-platform-conformance` require independent authorization before new cross-organization mirrors of private source. A private GitHub destination and available Actions minutes are not enough. Source-free numerical tests can provide host-only evidence; only authorized exact-tree real Oreslang compilation establishes guest parity.
