@@ -7,6 +7,7 @@ on:
       - "tests/ml_batch_bridge_oracle.test.mjs"
       - "tests/ml_supervised_batch_oracle.test.mjs"
       - "examples/supervised_ml_batch.ores"
+      - "scripts/verify-ml-data-bridge-guest.sh"
       - "docs/ML_BATCH_PIPELINE_V1.md"
       - ".github/workflows/ml-batch-bridge.yml"
   workflow_dispatch:
@@ -23,5 +24,7 @@ jobs:
           node-version: "22"
       - name: Run independent reference cases
         run: node --test tests/ml_batch_bridge_oracle.test.mjs tests/ml_supervised_batch_oracle.test.mjs
+      - name: Check guest verifier shell syntax
+        run: sh -n scripts/verify-ml-data-bridge-guest.sh
       - name: Mark evidence limitations
         run: echo "HOST_ONLY; ORESLANG_GUEST_EXECUTION=NOT_EXECUTED; TENSOR_ACCELERATION=NOT_EXECUTED"
