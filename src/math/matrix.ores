@@ -54,9 +54,12 @@ pub fnc matrix_index(
     return Err("column index out of bounds");
   fi
 
-  val Result<bool, String> valid_shape = validate_matrix(matrix);
-  if valid_shape.is_err(); do
-    return Err("invalid matrix shape or storage");
+  // Indexing must be overflow-safe even if called independently from
+  // validate_matrix; do not turn O(1) matrix_index into an O(n) scan.
+  if matrix.cols > 0; do
+    if matrix.rows > 9223372036854775807 / matrix.cols; do
+      return Err("matrix dimension product exceeds signed i64");
+    fi
   fi
 
   return Ok((row * matrix.cols) + col);
