@@ -48,6 +48,8 @@ def validate_view(shape, strides_bytes, offset_bytes, storage_bytes, itemsize):
     pointer or allocation occurs in this reference implementation.
     """
     _bounded_int(itemsize, 1, 64, "itemsize")
+    if type(shape) not in (tuple, list) or len(shape) > 16:
+        raise LayoutError("invalid view shape")
     _bounded_int(storage_bytes, 0, LIMIT, "storage_bytes")
     _bounded_int(offset_bytes, 0, LIMIT, "offset_bytes")
     if type(strides_bytes) not in (tuple, list) or len(strides_bytes) != len(shape):
@@ -81,12 +83,14 @@ class Lease:
     mutable: bool
     start: int
     end: int
+    token: int
 
 
 class BorrowBook:
     def __init__(self):
         self._generations = {}
         self._leases = set()
+        self._next_token = 0
 
     def register(self, owner, generation):
         if type(owner) is not str or not owner or type(generation) is not int or generation < 1:
@@ -96,20 +100,19 @@ class BorrowBook:
         self._generations[owner] = generation
 
     def borrow(self, owner, generation, *, mutable, start, end):
-        if self._generations.get(owner) != generation or type(generation) is not int:
+        if type(owner) is not str or self._generations.get(owner) != generation or type(generation) is not int:
             raise LayoutError("stale or alien owner")
         if type(mutable) is not bool:
             raise LayoutError("mutable authorization must be boolean")
         _bounded_int(start, 0, LIMIT, "start")
         _bounded_int(end, start, LIMIT, "end")
-        candidate = Lease(owner, generation, mutable, start, end)
         for held in self._leases:
             if (held.owner == owner and held.generation == generation
                     and max(start, held.start) < min(end, held.end)
                     and (held.mutable or mutable)):
                 raise LayoutError("overlapping mutable loan")
-        if candidate in self._leases:
-            raise LayoutError("duplicate live loan")
+        self._next_token += 1
+        candidate = Lease(owner, generation, mutable, start, end, self._next_token)
         self._leases.add(candidate)
         return candidate
 
