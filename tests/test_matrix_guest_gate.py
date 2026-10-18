@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import unittest
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 GATE = ROOT / "scripts/test-matrix-source-local.sh"
@@ -41,6 +42,31 @@ class MatrixGuestGateTests(unittest.TestCase):
                              capture_output=True, text=True)
         self.assertEqual(run.returncode, 65)
         self.assertIn("malformed commit identity", run.stderr)
+
+    def test_symlinked_compiler_rejected_before_checkout(self):
+        with tempfile.TemporaryDirectory() as folder:
+            executable = Path(folder) / "compiler"
+            executable.symlink_to("/bin/true")
+            env = {
+                "PATH": os.environ.get("PATH", ""),
+                "EXPECTED_SOURCE_SHA": "a" * 40,
+                "EXPECTED_SOURCE_TREE": "b" * 40,
+                "EXPECTED_COMPILER_SHA256": "c" * 64,
+                "ORESLANG_BIN": str(executable),
+                "MATRIX_EVIDENCE_DIR": folder,
+            }
+            run = subprocess.run(["bash", str(GATE)], env=env,
+                                 cwd=str(ROOT), capture_output=True, text=True)
+            self.assertEqual(run.returncode, 65)
+            self.assertIn("compiler symlink", run.stderr)
+
+    def test_post_execution_revalidates_source_and_compiler(self):
+        source = GATE.read_text(encoding="utf-8")
+        for check in ("compiler binary changed during execution",
+                      "source HEAD changed during execution",
+                      "source tree changed during execution",
+                      "source checkout modified during guest execution"):
+            self.assertIn(check, source)
 
     def test_no_source_export_or_test_double_is_in_gate(self):
         source = GATE.read_text(encoding="utf-8")
