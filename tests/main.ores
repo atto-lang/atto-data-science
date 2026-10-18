@@ -182,7 +182,7 @@ fnc test_matrix_shape_product_bounds(): TestOutcome {
   fi
   val DenseMatrixF64 zero = new DenseMatrixF64(0, 3037000499, arr[]);
   val Result<bool, String> admitted = validate_matrix(zero);
-  return expect_true(admitted.is_ok(), "zero extent must keep zero-size matrix valid");
+  return expect_true(!admitted.is_err(), "zero extent must keep zero-size matrix valid");
 }
 
 fnc test_nullable_column_mean(): TestOutcome {
