@@ -30,13 +30,27 @@ pub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
     fi
     return Ok(true);
   fi
-  if matrix.cols > available; do
-    return Err("matrix storage length does not match rows * cols");
-  fi
-  if matrix.rows > available / matrix.cols; do
+  if matrix.rows > available || matrix.cols > available; do
     return Err("matrix dimensions exceed storage extent");
   fi
-  if matrix.rows * matrix.cols != available; do
+
+  // Oreslang's int/int '/' produces a float. Never use it for exact bounds
+  // or assume that a floating quotient proves integer multiplication safe.
+  // Each subtraction consumes real backing storage, so the loop is bounded
+  // by the already materialized list length, not an untrusted dimension.
+  let int remaining = available;
+  let int completed_rows = 0;
+  loop {
+    if completed_rows >= matrix.rows; do
+      break;
+    fi
+    if remaining < matrix.cols; do
+      return Err("matrix dimensions exceed storage extent");
+    fi
+    remaining = remaining - matrix.cols;
+    completed_rows = completed_rows + 1;
+  }
+  if remaining != 0; do
     return Err("matrix storage length does not match rows * cols");
   fi
 
