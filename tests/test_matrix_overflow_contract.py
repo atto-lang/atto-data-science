@@ -31,6 +31,11 @@ def checked_product(rows, cols):
 class MatrixIndexContractTests(unittest.TestCase):
     def test_no_floating_division_as_overflow_guard(self):
         source = SOURCE.read_text(encoding="utf-8")
+        self.assertNotIn("NaNpub", source)
+        self.assertEqual(source.count("fnc checked_matrix_element_count("), 1,
+                         "a call to a missing helper is not a definition")
+        self.assertIn("return Ok(product);", source)
+        self.assertIn("pub fnc validate_matrix(", source)
         method = source.split("fnc checked_matrix_element_count", 1)[1].split(
             "pub fnc validate_matrix", 1)[0]
         statements = [line.strip() for line in method.splitlines()
