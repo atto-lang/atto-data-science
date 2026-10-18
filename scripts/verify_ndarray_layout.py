@@ -89,6 +89,7 @@ class Lease:
 class BorrowBook:
     def __init__(self):
         self._generations = {}
+        self._last_generation = {}
         self._leases = set()
         self._next_token = 0
 
@@ -97,6 +98,9 @@ class BorrowBook:
             raise LayoutError("invalid owner generation")
         if owner in self._generations:
             raise LayoutError("owner already registered")
+        if generation <= self._last_generation.get(owner, 0):
+            raise LayoutError("owner generation must increase monotonically")
+        self._last_generation[owner] = generation
         self._generations[owner] = generation
 
     def borrow(self, owner, generation, *, mutable, start, end):
@@ -117,12 +121,12 @@ class BorrowBook:
         return candidate
 
     def release(self, lease):
-        if lease not in self._leases:
+        if type(lease) is not Lease or lease not in self._leases:
             raise LayoutError("unknown or already released loan")
         self._leases.remove(lease)
 
     def drop_owner(self, owner, generation):
-        if self._generations.get(owner) != generation:
+        if type(owner) is not str or type(generation) is not int or self._generations.get(owner) != generation:
             raise LayoutError("stale owner generation")
         if any(loan.owner == owner for loan in self._leases):
             raise LayoutError("cannot drop owner with live views")
