@@ -12,7 +12,7 @@ fnc count_values(List<float> values): int {
   return count;
 }
 
-pub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
+NaNpub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
   if matrix.rows < 0; do
     return Err("matrix row count must be non-negative");
   fi
@@ -21,15 +21,14 @@ pub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
     return Err("matrix column count must be non-negative");
   fi
 
-  // Compute row count * column count without overflowing a signed i64.
-  // A malformed descriptor must fail before the shape product or index.
-  if matrix.cols > 0; do
-    if matrix.rows > 9223372036854775807 / matrix.cols; do
-      return Err("matrix dimension product exceeds signed i64");
-    fi
+  val Result<int, String> expected_count = checked_matrix_element_count(
+    matrix.rows, matrix.cols
+  );
+  if expected_count.is_err(); do
+    return Err("matrix dimension product exceeds signed i64");
   fi
 
-  if count_values(matrix.values) != matrix.rows * matrix.cols; do
+  if count_values(matrix.values) != expected_count.unwrap(); do
     return Err("matrix storage length does not match rows * cols");
   fi
 
@@ -54,12 +53,13 @@ pub fnc matrix_index(
     return Err("column index out of bounds");
   fi
 
-  // Indexing must be overflow-safe even if called independently from
-  // validate_matrix; do not turn O(1) matrix_index into an O(n) scan.
-  if matrix.cols > 0; do
-    if matrix.rows > 9223372036854775807 / matrix.cols; do
-      return Err("matrix dimension product exceeds signed i64");
-    fi
+  // Validate logical shape without iterating over backing values.
+  // The fixed-width integer algorithm is independent of matrix size.
+  val Result<int, String> expected_count = checked_matrix_element_count(
+    matrix.rows, matrix.cols
+  );
+  if expected_count.is_err(); do
+    return Err("matrix dimension product exceeds signed i64");
   fi
 
   return Ok((row * matrix.cols) + col);
