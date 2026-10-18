@@ -30,6 +30,20 @@ class MatrixIndexContractTests(unittest.TestCase):
                         index.index("(row * matrix.cols) + col"))
         self.assertNotIn("validate_matrix(matrix)", index)
 
+    def test_matrix_get_validates_storage_before_dereference(self):
+        source = SOURCE.read_text(encoding="utf-8")
+        body = source.split("pub fnc matrix_get", 1)[1].split("pub fnc matvec_into", 1)[0]
+        self.assertIn("validate_matrix(matrix)", body)
+        self.assertLess(body.index("validate_matrix(matrix)"),
+                        body.index("matrix.values[index_result.unwrap()]"))
+
+    def test_real_guest_regressions_are_registered(self):
+        guest = (SOURCE.parents[2] / "tests/main.ores").read_text(encoding="utf-8")
+        for name in ("matrix/short-storage", "matrix/valid-get", "matrix/overflow"):
+            self.assertIn('new TestCase("' + name + '"', guest)
+        self.assertIn("matrix_get(truncated, 0, 1)", guest)
+        self.assertIn("3037000500, 3037000500", guest)
+
     def test_boundary_products(self):
         self.assertTrue(safe_shape(0, I64_MAX))
         self.assertTrue(safe_shape(I64_MAX, 0))
