@@ -21,6 +21,15 @@ pub fnc validate_matrix(DenseMatrixF64 matrix): Result<bool, String> {
     return Err("matrix column count must be non-negative");
   fi
 
+  // Until checked-int multiplication is proved for this compiler build,
+  // conservatively cap each dimension below floor(sqrt(MAX_SIGNED_I64)).
+  // This prevents shape-product overflow even if backend int multiplies wrap.
+  if matrix.rows > 3037000499; do
+    return Err("matrix row dimension exceeds safe product bound");
+  fi
+  if matrix.cols > 3037000499; do
+    return Err("matrix column dimension exceeds safe product bound");
+  fi
   if count_values(matrix.values) != matrix.rows * matrix.cols; do
     return Err("matrix storage length does not match rows * cols");
   fi
