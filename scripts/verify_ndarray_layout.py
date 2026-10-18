@@ -76,7 +76,7 @@ def validate_view(shape, strides_bytes, offset_bytes, storage_bytes, itemsize):
     return low, high
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Lease:
     owner: str
     generation: int
