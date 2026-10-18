@@ -6,6 +6,7 @@ import fnc sum, dot, mean, variance_population, variance_sample, minimum, maximu
 import fnc scale, normalize_l2 from '../src/math/vector';
 import class DenseMatrixF64 from '../src/math/matrix';
 import fnc matvec_into from '../src/math/matrix';
+import fnc validate_matrix, matrix_index from '../src/math/matrix';
 import class FloatColumn from '../src/data/columnar';
 import fnc column_mean from '../src/data/columnar';
 import class ParticleSetF64 from '../src/dop/soa';
@@ -171,6 +172,64 @@ fnc test_matvec(): TestOutcome {
   return expect_near_float(actual[1], 39.0, 0.000001, "matvec row 1");
 }
 
+// These cases execute in the actual Oreslang guest test harness, once a
+// current compiler is available. They are not Python reference-model checks.
+fnc test_matrix_extent_overflow_denied(): TestOutcome {
+  val DenseMatrixF64 oversized = new DenseMatrixF64(
+    1000000000,
+    1000000000,
+    arr[]
+  );
+  val TestOutcome shape_check = expect_true(
+    validate_matrix(oversized).is_err(),
+    "huge dimensions without backing storage must reject before multiplication"
+  );
+  if !shape_check.passed; do
+    return shape_check;
+  fi
+  return expect_true(
+    matrix_index(oversized, 0, 0).is_err(),
+    "public matrix_index must reject malformed backing storage"
+  );
+}
+
+fnc test_matrix_zero_and_negative_extents(): TestOutcome {
+  val DenseMatrixF64 zero = new DenseMatrixF64(0, 1000000000, arr[]);
+  val TestOutcome zero_check = expect_true(
+    validate_matrix(zero).is_ok(),
+    "zero-extent matrix with empty storage must be well-formed"
+  );
+  if !zero_check.passed; do
+    return zero_check;
+  fi
+
+  val DenseMatrixF64 negative = new DenseMatrixF64(0 - 1, 2, arr[]);
+  val TestOutcome negative_check = expect_true(
+    validate_matrix(negative).is_err(),
+    "negative shape must reject"
+  );
+  if !negative_check.passed; do
+    return negative_check;
+  fi
+
+  val DenseMatrixF64 missing = new DenseMatrixF64(2, 2, arr[1.0]);
+  return expect_true(
+    matrix_index(missing, 1, 1).is_err(),
+    "indexing incomplete storage must reject"
+  );
+}
+
+fnc test_matrix_valid_checked_index(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(
+    2, 3, arr[0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+  );
+  val Result<int, String> result = matrix_index(matrix, 1, 2);
+  if result.is_err(); do
+    return fail("well-formed matrix_index returned Err");
+  fi
+  return expect_true(result.unwrap() == 5, "matrix_index must match row-major index");
+}
+
 fnc test_nullable_column_mean(): TestOutcome {
   val FloatColumn column = new FloatColumn(
     "x",
@@ -219,6 +278,9 @@ pub routine main(): void {
       new TestCase("reductions/min-max", test_min_max, false, ""),
       new TestCase("vector/scale-normalize", test_scale_and_normalize, false, ""),
       new TestCase("matrix/matvec", test_matvec, false, ""),
+      new TestCase("matrix/extents-overflow", test_matrix_extent_overflow_denied, false, ""),
+      new TestCase("matrix/zero-negative-shapes", test_matrix_zero_and_negative_extents, false, ""),
+      new TestCase("matrix/checked-index", test_matrix_valid_checked_index, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
       new TestCase("dop/particle-energy", test_particle_energy, false, "")
     ]
