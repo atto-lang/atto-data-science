@@ -207,6 +207,36 @@ fnc test_matrix_shape_product_overflow(): TestOutcome {
   return expect_true(read_result.is_err(), "matrix_get must reject overflowing shape");
 }
 
+fnc test_matrix_zero_extent_shape(): TestOutcome {
+  // A zero extent is legal with empty storage even if the other extent
+  // would overflow a nonzero shape product.
+  val DenseMatrixF64 empty = new DenseMatrixF64(
+    0, 3037000500, arr[]
+  );
+  val Result<bool, String> shape = validate_matrix(empty);
+  if shape.is_err(); do
+    return fail("zero-row matrix with empty storage must be valid");
+  fi
+  val Result<int, String> index = matrix_index(empty, 0, 0);
+  return expect_true(index.is_err(), "zero-row matrix must have no readable rows");
+}
+
+fnc test_matrix_bounds_and_negative_shape(): TestOutcome {
+  val DenseMatrixF64 valid = new DenseMatrixF64(1, 2, arr[1.0, 2.0]);
+  if !(matrix_index(valid, 0, 0 - 1)).is_err(); do
+    return fail("negative matrix column index must be rejected");
+  fi
+  if !(matrix_index(valid, 1, 0)).is_err(); do
+    return fail("row equal to extent must be rejected");
+  fi
+  if !(matrix_index(valid, 0, 2)).is_err(); do
+    return fail("column equal to extent must be rejected");
+  fi
+  val DenseMatrixF64 negative = new DenseMatrixF64(0 - 1, 2, arr[]);
+  return expect_true(validate_matrix(negative).is_err(),
+    "negative matrix extent must be rejected");
+}
+
 fnc test_nullable_column_mean(): TestOutcome {
   val FloatColumn column = new FloatColumn(
     "x",
@@ -258,6 +288,8 @@ pub routine main(): void {
       new TestCase("matrix/short-storage", test_matrix_bad_backing_storage, false, ""),
       new TestCase("matrix/valid-get", test_matrix_valid_get, false, ""),
       new TestCase("matrix/overflow", test_matrix_shape_product_overflow, false, ""),
+      new TestCase("matrix/zero-extent", test_matrix_zero_extent_shape, false, ""),
+      new TestCase("matrix/bounds-and-negative", test_matrix_bounds_and_negative_shape, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
       new TestCase("dop/particle-energy", test_particle_energy, false, "")
     ]
