@@ -223,13 +223,16 @@ fnc test_matrix_zero_extent_shape(): TestOutcome {
 
 fnc test_matrix_bounds_and_negative_shape(): TestOutcome {
   val DenseMatrixF64 valid = new DenseMatrixF64(1, 2, arr[1.0, 2.0]);
-  if !(matrix_index(valid, 0, 0 - 1)).is_err(); do
+  val Result<int, String> negative_col = matrix_index(valid, 0, 0 - 1);
+  if !negative_col.is_err(); do
     return fail("negative matrix column index must be rejected");
   fi
-  if !(matrix_index(valid, 1, 0)).is_err(); do
+  val Result<int, String> beyond_rows = matrix_index(valid, 1, 0);
+  if !beyond_rows.is_err(); do
     return fail("row equal to extent must be rejected");
   fi
-  if !(matrix_index(valid, 0, 2)).is_err(); do
+  val Result<int, String> beyond_cols = matrix_index(valid, 0, 2);
+  if !beyond_cols.is_err(); do
     return fail("column equal to extent must be rejected");
   fi
   val DenseMatrixF64 negative = new DenseMatrixF64(0 - 1, 2, arr[]);
