@@ -1,6 +1,6 @@
 # Roadmap
 
-The target is not a thin Python compatibility layer. The target is an Oreslang-native stack covering the common NumPy + pandas/Polars + SciPy + scikit-learn workflow while exploiting Oreslang's runtime model.
+The target is not a thin Python compatibility layer. The target is an Oreslang-native stack covering the common NumPy + pandas/Polars + SciPy + scikit-learn workflow plus high-throughput embedding generation and retrieval while exploiting Oreslang's runtime model.
 
 ## P0 — native numerical/data core
 
@@ -12,22 +12,35 @@ The target is not a thin Python compatibility layer. The target is an Oreslang-n
 - [x] eager map/filter buffer kernels;
 - [x] Struct-of-Arrays point/particle examples;
 - [x] native Oreslang test suite using the core test framework;
-- [ ] benchmark harness against equivalent Python/NumPy/Polars operations.
+- [x] row-major embedding batches with model/revision identity;
+- [x] batch dot/cosine/squared-L2 kernels with caller-owned output buffers;
+- [x] row-wise top-k plus fused dot + top-k retrieval;
+- [ ] benchmark harness against equivalent NumPy/Polars/vector operations.
 
-## P1 — ndarray and dataframe semantics
+## P1 — contiguous arrays, embeddings, and ndarray semantics
 
 - dedicated contiguous typed `Array<T>`;
+- aligned `f32`, `f16`, and `bf16` numeric buffers;
 - n-dimensional arrays with shape/stride metadata;
 - zero-copy views and slicing;
 - broadcasting;
+- migrate embedding storage from `List<float>` to contiguous arrays without changing the public shape;
+- batch-first tokenizer/model input buffers;
+- pooling + row normalization;
 - bit-packed validity masks;
 - heterogeneous DataFrame schema;
 - select/filter/with_column/group_by/aggregate/join/sort;
 - lazy logical plans and expression trees;
 - chunked execution and operator fusion.
 
-## P2 — data interchange
+## P2 — embedding model runtime and data interchange
 
+- actor-owned resident embedding-model sessions;
+- request microbatching with Future/Awaitable completion;
+- immediate cancellation of queued embedding requests;
+- backend cancellation where the inference engine supports it;
+- pluggable model execution backends;
+- fused normalized embedding output;
 - CSV and JSON readers/writers;
 - Arrow-compatible column buffers;
 - Parquet;
@@ -44,7 +57,7 @@ The target is not a thin Python compatibility layer. The target is an Oreslang-n
 - numerical integration and root finding;
 - time-series windows/rolling operations.
 
-## P4 — machine learning
+## P4 — machine learning and retrieval
 
 - train/test split;
 - preprocessing pipelines;
@@ -53,26 +66,37 @@ The target is not a thin Python compatibility layer. The target is an Oreslang-n
 - clustering;
 - metrics;
 - model serialization;
-- tensor/accelerator bridge.
+- tensor/accelerator bridge;
+- approximate-nearest-neighbor adapters;
+- quantized embedding storage/search;
+- vector-database interchange.
 
 ## P5 — runtime/compiler acceleration
 
-- recognize reduction and linear-algebra kernels;
+- recognize reduction, embedding, and linear-algebra kernels;
 - loop fusion;
 - SIMD;
 - multicore chunk scheduling;
 - effect-aware parallel plans;
+- fused pooling + normalization;
+- fused dot + top-k;
+- AOT specialization for common embedding dimensions;
 - Regent/Legion-inspired CPU/GPU mapping;
-- explicit transfer planning for GPU-resident columns;
-- cache-aware batch sizing;
+- explicit transfer planning for GPU-resident arrays and columns;
+- cache-aware batch sizing and microbatching;
 - AOT specialization for known shapes and schemas.
+
+## Embedding performance bar
+
+Track vectors/second for normalize, dot, cosine, squared-L2, and top-k; texts/second and tokens/second for model inference; p50/p95 end-to-end latency; allocations and bytes copied per request; host/device transfer volume; CPU/GPU utilization; achieved batch occupancy; and warm inference separately from cold model startup.
 
 ## Competitive bar
 
-For common exploratory workloads, Oreslang should aim for:
+For common exploratory and embedding workloads, Oreslang should aim for:
 
 - Python-level ergonomics without a Python interpreter dependency;
 - Polars-style columnar execution;
 - NumPy-class dense numeric kernels;
+- batch-oriented vector retrieval without boxed vector objects;
 - Rust-like predictable native deployment;
 - Oreslang-native actor/task isolation and heterogeneous scheduling.
