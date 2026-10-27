@@ -25,4 +25,6 @@ jobs:
       - name: Verify runner failure and invocation contracts
         run: bash scripts/test-runner.sh
       - name: Verify byte-level BPE reference semantics
-        run: python3 tests/test_bpe_reference.py
+        run: |
+          rustc --edition=2021 --test tests/bpe_reference.rs -o "$RUNNER_TEMP/bpe-reference"
+          "$RUNNER_TEMP/bpe-reference"
