@@ -1,0 +1,4 @@
+stable-reduction	java	execution
+columnar-alias	java	execution
+async-adapter	java	execution
+negative-admission	java	rejection
