@@ -10,6 +10,8 @@ import class FloatColumn from '../src/data/columnar';
 import fnc column_mean from '../src/data/columnar';
 import class ParticleSetF64 from '../src/dop/soa';
 import fnc kinetic_energy from '../src/dop/soa';
+import class BpeMerge, BpeEncoding from '../src/nlp/bpe';
+import fnc encode_utf8_bytes_into from '../src/nlp/bpe';
 
 fnc test_sqrt_nine(): TestOutcome {
   val Result<float, String> result = sqrt(9.0);
@@ -205,6 +207,188 @@ fnc test_particle_energy(): TestOutcome {
   return expect_near_float(result.unwrap(), 25.0, 0.000001, "kinetic energy must equal 25");
 }
 
+
+fnc test_bpe_ascii_chain(): TestOutcome {
+  val List<int> bytes = arr[97, 98, 99];
+  val List<BpeMerge> merges = arr[
+    new BpeMerge(97, 98, 256, 0),
+    new BpeMerge(256, 99, 257, 1)
+  ];
+  val List<int> token_ids = arr[0, 0, 0];
+  val List<int> starts = arr[0, 0, 0];
+  val List<int> ends = arr[0, 0, 0];
+
+  val Result<BpeEncoding, String> result = encode_utf8_bytes_into(
+    bytes,
+    merges,
+    token_ids,
+    starts,
+    ends
+  );
+  if result.is_err(); do
+    return fail("BPE ASCII chain returned Err");
+  fi
+
+  val BpeEncoding encoded = result.unwrap();
+  val TestOutcome count_check = expect_true(
+    encoded.count == 1,
+    "BPE ASCII chain must collapse to one token"
+  );
+  if !count_check.passed; do
+    return count_check;
+  fi
+
+  val TestOutcome token_check = expect_true(
+    encoded.token_ids[0] == 257,
+    "BPE ASCII chain must produce token 257"
+  );
+  if !token_check.passed; do
+    return token_check;
+  fi
+
+  val TestOutcome start_check = expect_true(
+    encoded.byte_starts[0] == 0,
+    "BPE ASCII chain must preserve start byte offset"
+  );
+  if !start_check.passed; do
+    return start_check;
+  fi
+
+  return expect_true(
+    encoded.byte_ends[0] == 3,
+    "BPE ASCII chain must preserve end byte offset"
+  );
+}
+
+fnc test_bpe_rank_order(): TestOutcome {
+  val List<int> bytes = arr[97, 98, 97];
+  val List<BpeMerge> merges = arr[
+    new BpeMerge(97, 98, 256, 1),
+    new BpeMerge(98, 97, 257, 0)
+  ];
+  val List<int> token_ids = arr[0, 0, 0];
+  val List<int> starts = arr[0, 0, 0];
+  val List<int> ends = arr[0, 0, 0];
+
+  val Result<BpeEncoding, String> result = encode_utf8_bytes_into(
+    bytes,
+    merges,
+    token_ids,
+    starts,
+    ends
+  );
+  if result.is_err(); do
+    return fail("BPE rank-order test returned Err");
+  fi
+
+  val BpeEncoding encoded = result.unwrap();
+  val TestOutcome count_check = expect_true(
+    encoded.count == 2,
+    "BPE global rank ordering must leave two tokens"
+  );
+  if !count_check.passed; do
+    return count_check;
+  fi
+
+  val TestOutcome first_check = expect_true(
+    encoded.token_ids[0] == 97,
+    "BPE lower-ranked right pair must beat leftmost higher-ranked pair"
+  );
+  if !first_check.passed; do
+    return first_check;
+  fi
+
+  val TestOutcome second_check = expect_true(
+    encoded.token_ids[1] == 257,
+    "BPE rank-order test must produce token 257"
+  );
+  if !second_check.passed; do
+    return second_check;
+  fi
+
+  val TestOutcome start_check = expect_true(
+    encoded.byte_starts[1] == 1,
+    "BPE merged right pair must start at byte 1"
+  );
+  if !start_check.passed; do
+    return start_check;
+  fi
+
+  return expect_true(
+    encoded.byte_ends[1] == 3,
+    "BPE merged right pair must end at byte 3"
+  );
+}
+
+fnc test_bpe_utf8_span(): TestOutcome {
+  // UTF-8 for U+00E9 LATIN SMALL LETTER E WITH ACUTE is C3 A9.
+  val List<int> bytes = arr[195, 169];
+  val List<BpeMerge> merges = arr[
+    new BpeMerge(195, 169, 300, 0)
+  ];
+  val List<int> token_ids = arr[0, 0];
+  val List<int> starts = arr[0, 0];
+  val List<int> ends = arr[0, 0];
+
+  val Result<BpeEncoding, String> result = encode_utf8_bytes_into(
+    bytes,
+    merges,
+    token_ids,
+    starts,
+    ends
+  );
+  if result.is_err(); do
+    return fail("BPE UTF-8 span test returned Err");
+  fi
+
+  val BpeEncoding encoded = result.unwrap();
+  val TestOutcome count_check = expect_true(
+    encoded.count == 1,
+    "two-byte UTF-8 sequence must collapse to one token"
+  );
+  if !count_check.passed; do
+    return count_check;
+  fi
+
+  val TestOutcome token_check = expect_true(
+    encoded.token_ids[0] == 300,
+    "two-byte UTF-8 sequence must produce token 300"
+  );
+  if !token_check.passed; do
+    return token_check;
+  fi
+
+  val TestOutcome start_check = expect_true(
+    encoded.byte_starts[0] == 0,
+    "UTF-8 token span must start at byte 0"
+  );
+  if !start_check.passed; do
+    return start_check;
+  fi
+
+  return expect_true(
+    encoded.byte_ends[0] == 2,
+    "UTF-8 token span must end at byte 2"
+  );
+}
+
+fnc test_bpe_rejects_invalid_input(): TestOutcome {
+  val List<int> bytes = arr[256];
+  val List<BpeMerge> merges = arr[];
+  val List<int> token_ids = arr[0];
+  val List<int> starts = arr[0];
+  val List<int> ends = arr[0];
+
+  val Result<BpeEncoding, String> result = encode_utf8_bytes_into(
+    bytes,
+    merges,
+    token_ids,
+    starts,
+    ends
+  );
+  return expect_true(result.is_err(), "BPE must reject values larger than one byte");
+}
+
 pub routine main(): void {
   val TestSuite suite = new TestSuite(
     "data-science",
@@ -220,7 +404,11 @@ pub routine main(): void {
       new TestCase("vector/scale-normalize", test_scale_and_normalize, false, ""),
       new TestCase("matrix/matvec", test_matvec, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
-      new TestCase("dop/particle-energy", test_particle_energy, false, "")
+      new TestCase("dop/particle-energy", test_particle_energy, false, ""),
+      new TestCase("nlp/bpe-ascii-chain", test_bpe_ascii_chain, false, ""),
+      new TestCase("nlp/bpe-rank-order", test_bpe_rank_order, false, ""),
+      new TestCase("nlp/bpe-utf8-span", test_bpe_utf8_span, false, ""),
+      new TestCase("nlp/bpe-invalid-input", test_bpe_rejects_invalid_input, false, "")
     ]
   );
 
