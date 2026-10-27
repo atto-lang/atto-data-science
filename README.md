@@ -15,7 +15,8 @@ The current compiler-facing implementation provides:
 - row-major `DenseMatrixF64` with caller-provided output buffers;
 - nullable columnar `FloatColumn` and `FloatFrame`;
 - allocation-conscious map/filter pipeline primitives;
-- Struct-of-Arrays point-cloud and particle data models.
+- Struct-of-Arrays point-cloud and particle data models;
+- deterministic pure-Oreslang byte-level BPE with caller-provided token/span buffers.
 
 Current core `main` represents typed sequences as `List<T>`. Oreslang object values are references and ordinary arguments are passed by reference: passing `values` does not copy the object and does not require address-of syntax. Oreslang source does **not** expose raw pointers: `&` is not an address-of/borrow operator, unary `*` is not a dereference operator, and pointer arithmetic is not part of userland Oreslang. (`*` remains the ordinary multiplication operator.)
 
@@ -43,9 +44,9 @@ The repository uses the Oreslang-native framework from core PR #233. A pinned co
 ORESLANG_BIN=/path/to/oreslang ./scripts/test.sh
 ```
 
-The suite in `tests/main.ores` covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, and SoA particle energy.
+The suite in `tests/main.ores` covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, SoA particle energy, and byte-level BPE rank/span semantics. `tests/test_bpe_reference.py` independently checks the intended BPE behavior while native compiler/runtime execution remains gated upstream; it is not a substitute for native Oreslang evidence.
 
-See [Architecture](docs/ARCHITECTURE.md) and [Roadmap](ROADMAP.md).
+The NLP boundary deliberately accepts UTF-8 bytes today so it does not depend on backend-specific String storage. See [NLP text and BPE contract](docs/NLP_TEXT_CONTRACT.md), [Architecture](docs/ARCHITECTURE.md), and [Roadmap](ROADMAP.md).
 
 ## Compiler PR checkpoint (2026-10-06)
 
