@@ -102,7 +102,7 @@ pub fnc encode_utf8_bytes_into(
 
   val Result<bool, String> merge_table = validate_merge_table(merges);
   if merge_table.is_err(); do
-    return Err(merge_table.unwrap_err());
+    return Err("invalid BPE merge table");
   fi
 
   for int i = 0; i < byte_count; i++ do
