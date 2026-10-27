@@ -44,7 +44,7 @@ The repository uses the Oreslang-native framework from core PR #233. A pinned co
 ORESLANG_BIN=/path/to/oreslang ./scripts/test.sh
 ```
 
-The suite in `tests/main.ores` covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, SoA particle energy, and byte-level BPE rank/span semantics. `tests/test_bpe_reference.py` independently checks the intended BPE behavior while native compiler/runtime execution remains gated upstream; it is not a substitute for native Oreslang evidence.
+The suite in `tests/main.ores` covers scalar math, stable reductions, shape errors, vector normalization, dense matvec, nullable column means, SoA particle energy, and byte-level BPE rank/span semantics. `tests/bpe_reference.rs` independently checks the intended BPE behavior while native compiler/runtime execution remains gated upstream; it is not a substitute for native Oreslang evidence.
 
 The NLP boundary deliberately accepts UTF-8 bytes today so it does not depend on backend-specific String storage. See [NLP text and BPE contract](docs/NLP_TEXT_CONTRACT.md), [Architecture](docs/ARCHITECTURE.md), and [Roadmap](ROADMAP.md).
 
