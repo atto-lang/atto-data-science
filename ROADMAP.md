@@ -14,6 +14,15 @@ The target is not a thin Python compatibility layer. The target is an Oreslang-n
 - [x] native Oreslang test suite using the core test framework;
 - [ ] benchmark harness against equivalent Python/NumPy/Polars operations.
 
+## P0 — NLP text foundation
+
+- [x] deterministic byte-level BPE core in pure Oreslang;
+- [x] byte-offset token spans and caller-provided output buffers;
+- [x] reference checks for ASCII, UTF-8 multibyte spans, rank ordering, and invalid input;
+- [ ] cross-backend lifetime-safe `String` -> UTF-8 byte view;
+- [ ] Unicode normalization and grapheme/word/sentence segmentation;
+- [ ] execute the native BPE suite on Java/Graal, LLVM, .NET, WASM, and JS/transpiler backends.
+
 ## P1 — ndarray and dataframe semantics
 
 - dedicated contiguous typed `Array<T>`;
