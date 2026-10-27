@@ -67,5 +67,5 @@ The reference tests cover:
 - duplicate pair rejection;
 - duplicate rank rejection.
 
-`tests/test_bpe_reference.py` is an independent executable reference and does
+`tests/bpe_reference.rs` is an independent executable reference and does
 not count as native Oreslang compiler/runtime evidence.
