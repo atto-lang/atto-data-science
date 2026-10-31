@@ -128,6 +128,31 @@ class NdArrayAbiTests(unittest.TestCase):
         book.release(live)
         book.drop_owner("tensor",11)
 
+    def test_generation_domain_is_bounded_and_never_reused(self):
+        from verify_ndarray_layout import LIMIT
+        b = BorrowBook()
+        b.register("tensor", LIMIT)
+        live = b.borrow("tensor", LIMIT, mutable=False, start=0, end=8)
+        b.release(live)
+        b.drop_owner("tensor", LIMIT)
+        for invalid in (LIMIT + 1, True, 0, -1):
+            with self.subTest(generation=invalid), self.assertRaises(LayoutError):
+                b.register("tensor", invalid)
+        with self.assertRaises(LayoutError):
+            b.register("tensor", LIMIT)
+
+    def test_exhausted_lease_tokens_preserve_book_state(self):
+        from verify_ndarray_layout import LIMIT
+        b = BorrowBook()
+        b.register("tensor", 1)
+        # Arrange the boundary without trying to allocate 2**63 leases.
+        b._next_token = LIMIT
+        with self.assertRaisesRegex(LayoutError, "borrow token exhausted"):
+            b.borrow("tensor", 1, mutable=True, start=0, end=8)
+        self.assertEqual(b._next_token, LIMIT)
+        self.assertFalse(b._leases)
+        b.drop_owner("tensor", 1)
+
     def test_invalid_release_type_is_protocol_error(self):
         book=BorrowBook()
         with self.assertRaises(LayoutError):
