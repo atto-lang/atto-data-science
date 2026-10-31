@@ -28,13 +28,16 @@ fnc checked_matrix_element_count(int rows, int cols): Result<int, String> {
     if remaining == 0; do
       break;
     fi
-    if remaining % 2 == 1; do
+    // Recover the low bit with exact integer shift/subtraction semantics.
+    // The modulo operator is not part of the current Oreslang language.
+    val int half = remaining >> 1;
+    if remaining != (half + half); do
       if addend > 9223372036854775807 - product; do
         return Err("matrix dimension product exceeds signed i64");
       fi
       product = product + addend;
     fi
-    remaining = remaining >> 1;
+    remaining = half;
     if remaining > 0; do
       if addend > 9223372036854775807 - addend; do
         return Err("matrix dimension product exceeds signed i64");
