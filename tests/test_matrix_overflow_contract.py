@@ -41,7 +41,10 @@ class MatrixIndexContractTests(unittest.TestCase):
         statements = [line.strip() for line in method.splitlines()
                       if line.strip() and not line.lstrip().startswith("//")]
         self.assertNotIn("/", " ".join(statements))
-        self.assertIn("remaining = remaining >> 1", method)
+        self.assertIn("val int half = remaining >> 1", method)
+        self.assertIn("if remaining != (half + half); do", method)
+        self.assertIn("remaining = half;", method)
+        self.assertNotIn("remaining %", method, "guest source must not use removed modulo operator")
         self.assertIn("addend > 9223372036854775807 - product", method)
         self.assertIn("addend > 9223372036854775807 - addend", method)
         self.assertNotIn("matrix.rows * matrix.cols", source)
