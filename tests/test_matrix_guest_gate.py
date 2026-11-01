@@ -80,6 +80,14 @@ class MatrixGuestGateTests(unittest.TestCase):
             "matrix/zero-column-matvec",
             "matrix/short-matrix-preflight",
             "matrix/short-vector-preflight",
+            "matrix/rectangular-matvec",
+            "matrix/last-index",
+            "matrix/negative-row-read",
+            "matrix/zero-by-zero",
+            "matrix/zero-rows-matvec",
+            "matrix/short-output-preflight",
+            "matrix/zero-extent-extra-storage",
+            "matrix/negative-column-extent",
         ):
             with self.subTest(case=case):
                 self.assertIn("  " + case + "\n", source)
