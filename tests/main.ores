@@ -9,6 +9,7 @@ import fnc matvec_into from '../src/math/matrix';
 import fnc validate_matrix, matrix_index, matrix_get from '../src/math/matrix';
 import class FloatColumn from '../src/data/columnar';
 import fnc column_mean from '../src/data/columnar';
+import fnc validate_float_column from '../src/data/columnar';
 import class ParticleSetF64 from '../src/dop/soa';
 import fnc kinetic_energy from '../src/dop/soa';
 
@@ -295,6 +296,139 @@ fnc test_matvec_short_vector_preflight(): TestOutcome {
     "short vector rejection must preserve second destination element");
 }
 
+fnc test_matrix_rectangular_matvec(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(
+    2, 3, arr[1.0, 0.0, 0.0 - 1.0, 2.0, 3.0, 4.0]
+  );
+  val List<float> vector = arr[3.0, 5.0, 7.0];
+  val List<float> output = arr[91.0, 92.0];
+  val Result<List<float>, String> result = matvec_into(matrix, vector, output);
+  if result.is_err(); do
+    return fail("rectangular matrix-vector multiplication returned Err");
+  fi
+  val TestOutcome first = expect_near_float(output[0], 0.0 - 4.0, 0.000001,
+    "rectangular row 0");
+  if !first.passed; do
+    return first;
+  fi
+  return expect_near_float(output[1], 49.0, 0.000001, "rectangular row 1");
+}
+
+fnc test_matrix_last_element_index(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(
+    2, 3, arr[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+  );
+  val Result<int, String> index = matrix_index(matrix, 1, 2);
+  if index.is_err(); do
+    return fail("last valid matrix element index was rejected");
+  fi
+  return expect_true(index.unwrap() == 5, "last row-major index must equal 5");
+}
+
+fnc test_matrix_negative_row_read(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(
+    2, 2, arr[1.0, 2.0, 3.0, 4.0]
+  );
+  val Result<float, String> result = matrix_get(matrix, 0 - 1, 0);
+  return expect_true(result.is_err(), "negative matrix row read must fail");
+}
+
+fnc test_matrix_zero_by_zero(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(0, 0, arr[]);
+  val Result<bool, String> valid = validate_matrix(matrix);
+  if valid.is_err(); do
+    return fail("zero-by-zero matrix with empty backing must be valid");
+  fi
+  val Result<float, String> read_result = matrix_get(matrix, 0, 0);
+  return expect_true(read_result.is_err(), "zero-by-zero matrix has no elements");
+}
+
+fnc test_matrix_zero_rows_matvec(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(0, 2, arr[]);
+  val List<float> vector = arr[5.0, 6.0];
+  val List<float> output = arr[];
+  val Result<List<float>, String> result = matvec_into(matrix, vector, output);
+  if result.is_err(); do
+    return fail("zero-row matvec must succeed with empty destination");
+  fi
+  return expect_true(true, "zero-row matvec must not write an element");
+}
+
+fnc test_matrix_short_output_preflight(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(
+    2, 2, arr[1.0, 2.0, 3.0, 4.0]
+  );
+  val List<float> vector = arr[5.0, 6.0];
+  val List<float> output = arr[91.0];
+  val Result<List<float>, String> result = matvec_into(matrix, vector, output);
+  if !result.is_err(); do
+    return fail("short destination buffer was accepted");
+  fi
+  return expect_near_float(output[0], 91.0, 0.000001,
+    "short destination rejection must preserve output");
+}
+
+fnc test_matrix_zero_extent_extra_storage(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(0, 3, arr[1.0]);
+  return expect_true(validate_matrix(matrix).is_err(),
+    "zero-sized matrix must reject nonempty storage");
+}
+
+fnc test_matrix_negative_column_extent(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(2, 0 - 1, arr[]);
+  return expect_true(validate_matrix(matrix).is_err(),
+    "negative matrix column extent must be rejected");
+}
+
+fnc test_column_all_null_mean(): TestOutcome {
+  val FloatColumn column = new FloatColumn(
+    "all-null", arr[9.0, 10.0], arr[false, false]
+  );
+  val Result<float, String> result = column_mean(column);
+  return expect_true(result.is_err(), "column mean requires a valid row");
+}
+
+fnc test_column_mask_length_mismatch(): TestOutcome {
+  val FloatColumn column = new FloatColumn(
+    "bad-mask", arr[1.0, 2.0], arr[true]
+  );
+  val Result<bool, String> valid = validate_float_column(column);
+  if !valid.is_err(); do
+    return fail("column validity mask length mismatch was accepted");
+  fi
+  return expect_true(column_mean(column).is_err(),
+    "column mean must reject mismatched validity mask");
+}
+
+fnc test_column_empty_mean(): TestOutcome {
+  val FloatColumn column = new FloatColumn("empty", arr[], arr[]);
+  val Result<float, String> result = column_mean(column);
+  return expect_true(result.is_err(), "empty column mean must return Err");
+}
+
+fnc test_vector_zero_normalize(): TestOutcome {
+  val List<float> zeros = arr[0.0, 0.0, 0.0];
+  val Result<List<float>, String> normalized = normalize_l2(zeros);
+  return expect_true(normalized.is_err(), "zero vector must not normalize");
+}
+
+fnc test_sample_variance_singleton(): TestOutcome {
+  val List<float> single = arr[4.0];
+  val Result<float, String> variance = variance_sample(single);
+  return expect_true(variance.is_err(),
+    "sample variance requires at least two elements");
+}
+
+fnc test_dot_empty(): TestOutcome {
+  val List<float> empty = arr[];
+  val Result<float, String> result = dot(empty, empty);
+  if result.is_err(); do
+    return fail("dot of two empty vectors must equal zero");
+  fi
+  return expect_near_float(result.unwrap(), 0.0, 0.000001,
+    "empty dot product must be zero");
+}
+
 fnc test_nullable_column_mean(): TestOutcome {
   val FloatColumn column = new FloatColumn(
     "x",
@@ -351,6 +485,20 @@ pub routine main(): void {
       new TestCase("matrix/zero-column-matvec", test_matvec_zero_column_output, false, ""),
       new TestCase("matrix/short-matrix-preflight", test_matvec_short_matrix_preflight, false, ""),
       new TestCase("matrix/short-vector-preflight", test_matvec_short_vector_preflight, false, ""),
+      new TestCase("matrix/rectangular-matvec", test_matrix_rectangular_matvec, false, ""),
+      new TestCase("matrix/last-index", test_matrix_last_element_index, false, ""),
+      new TestCase("matrix/negative-row-read", test_matrix_negative_row_read, false, ""),
+      new TestCase("matrix/zero-by-zero", test_matrix_zero_by_zero, false, ""),
+      new TestCase("matrix/zero-rows-matvec", test_matrix_zero_rows_matvec, false, ""),
+      new TestCase("matrix/short-output-preflight", test_matrix_short_output_preflight, false, ""),
+      new TestCase("matrix/zero-extent-extra-storage", test_matrix_zero_extent_extra_storage, false, ""),
+      new TestCase("matrix/negative-column-extent", test_matrix_negative_column_extent, false, ""),
+      new TestCase("columnar/all-null-mean", test_column_all_null_mean, false, ""),
+      new TestCase("columnar/mask-length-mismatch", test_column_mask_length_mismatch, false, ""),
+      new TestCase("columnar/empty-mean", test_column_empty_mean, false, ""),
+      new TestCase("vector/zero-normalize", test_vector_zero_normalize, false, ""),
+      new TestCase("reductions/sample-singleton", test_sample_variance_singleton, false, ""),
+      new TestCase("reductions/dot-empty", test_dot_empty, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
       new TestCase("dop/particle-energy", test_particle_energy, false, "")
     ]
