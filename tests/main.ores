@@ -11,6 +11,22 @@ import fnc column_mean from '../src/data/columnar';
 import class ParticleSetF64 from '../src/dop/soa';
 import fnc kinetic_energy from '../src/dop/soa';
 
+fnc test_mean_singleton(): TestOutcome {
+  val Result<float, String> value = mean(arr[7.0]);
+  if value.is_err(); do return fail("singleton mean returned Err"); fi
+  return expect_near_float(value.unwrap(), 7.0, 0.000001, "singleton mean");
+}
+
+fnc test_dot_asymmetric_shape(): TestOutcome {
+  val Result<float, String> value = dot(arr[1.0], arr[1.0, 2.0]);
+  return expect_true(value.is_err(), "dot must reject shorter left vector");
+}
+
+fnc test_variance_singleton(): TestOutcome {
+  val Result<float, String> value = variance_sample(arr[2.0]);
+  return expect_true(value.is_err(), "N=1 sample variance must reject");
+}
+
 fnc test_sqrt_nine(): TestOutcome {
   val Result<float, String> result = sqrt(9.0);
   if result.is_err(); do
@@ -209,6 +225,9 @@ pub routine main(): void {
   val TestSuite suite = new TestSuite(
     "data-science",
     arr[
+      new TestCase("reductions/mean-singleton", test_mean_singleton, false, ""),
+      new TestCase("reductions/dot-asymmetric-shape", test_dot_asymmetric_shape, false, ""),
+      new TestCase("reductions/variance-singleton", test_variance_singleton, false, ""),
       new TestCase("math/sqrt/nine", test_sqrt_nine, false, ""),
       new TestCase("math/sqrt/negative", test_sqrt_negative, false, ""),
       new TestCase("reductions/sum", test_sum, false, ""),
