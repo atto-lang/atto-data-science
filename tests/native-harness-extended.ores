@@ -1,0 +1,56 @@
+// Six additional executable guest contracts using the native Oreslang suite API.
+// This is compiler-backed only when the Oreslang backend actually executes main().
+import class TestCase, TestSuite, TestOptions, RunSummary, TestOutcome from '../vendor/oreslang/testing';
+import fnc fail, expect_true, expect_false, expect_near_float, check_int_cases, run_suite, require_success from '../vendor/oreslang/testing';
+import fnc variance_sample, minimum, maximum from '../src/math/reductions';
+import fnc normalize_l2 from '../src/math/vector';
+import class DenseMatrixF64 from '../src/math/matrix';
+import fnc validate_matrix from '../src/math/matrix';
+
+fnc sample_singleton_rejected(): TestOutcome {
+  val Result<float, String> result = variance_sample(arr[9.0]);
+  return expect_true(result.is_err(), "sample variance needs two observations");
+}
+
+fnc minimum_empty_rejected(): TestOutcome {
+  val Result<float, String> result = minimum(arr[]);
+  return expect_true(result.is_err(), "minimum of empty input must be Err");
+}
+
+fnc maximum_empty_rejected(): TestOutcome {
+  val Result<float, String> result = maximum(arr[]);
+  return expect_true(result.is_err(), "maximum of empty input must be Err");
+}
+
+fnc zero_norm_rejected(): TestOutcome {
+  val Result<List<float>, String> result = normalize_l2(arr[0.0, 0.0]);
+  return expect_true(result.is_err(), "zero vector cannot be normalized");
+}
+
+fnc malformed_matrix_rejected(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(2, 2, arr[1.0, 2.0, 3.0]);
+  return expect_true(validate_matrix(matrix).is_err(), "storage must match matrix dimensions");
+}
+
+fnc property_always_ok(int value): TestOutcome {
+  return expect_true(value >= 0, "input unexpectedly negative");
+}
+fnc empty_property_rejected(): TestOutcome {
+  val TestOutcome outcome = check_int_cases("empty-dataset", arr[], property_always_ok);
+  return expect_false(outcome.passed, "empty property corpus must not count as PASS");
+}
+
+pub routine main(): void {
+  val TestSuite suite = new TestSuite("data-science/extended", arr[
+    new TestCase("variance/singleton-rejected", sample_singleton_rejected, false, ""),
+    new TestCase("min/empty-rejected", minimum_empty_rejected, false, ""),
+    new TestCase("max/empty-rejected", maximum_empty_rejected, false, ""),
+    new TestCase("vector/zero-norm-rejected", zero_norm_rejected, false, ""),
+    new TestCase("matrix/malformed-storage-rejected", malformed_matrix_rejected, false, ""),
+    new TestCase("harness/empty-property-rejected", empty_property_rejected, false, "")
+  ]);
+  val TestOptions options = new TestOptions("", false, true);
+  val RunSummary summary = run_suite(suite, options);
+  require_success(summary);
+  return;
+}
