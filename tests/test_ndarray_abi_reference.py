@@ -170,5 +170,93 @@ class NdArrayAbiTests(unittest.TestCase):
             b.release(loan)
 
 
+    def test_i64_limit_token_can_issue_exactly_once_and_then_retire(self):
+        from verify_ndarray_layout import LIMIT
+        b = BorrowBook()
+        b.register("tensor", 1)
+        b._next_token = LIMIT - 1
+        live = b.borrow("tensor", 1, mutable=True, start=0, end=16)
+        self.assertEqual(live.token, LIMIT)
+        with self.assertRaisesRegex(LayoutError, "borrow token exhausted"):
+            b.borrow("tensor", 1, mutable=False, start=16, end=32)
+        self.assertEqual(len(b._leases), 1)
+        b.release(live)
+        b.drop_owner("tensor", 1)
+
+    def test_invalid_zero_shape_tail_cannot_bypass_dimension_validation(self):
+        from verify_ndarray_layout import LIMIT
+        for shape in ((0, -1), (0, True), (0, LIMIT + 1),
+                      (LIMIT + 1, 0), (0, 1.5)):
+            with self.subTest(shape=shape), self.assertRaises(LayoutError):
+                checked_elements(shape)
+        self.assertEqual(checked_elements((0, LIMIT)), 0)
+        self.assertEqual(contiguous_bytes((0, LIMIT), 8), 0)
+
+    def test_empty_view_must_preflight_all_stride_types_and_alignment(self):
+        from verify_ndarray_layout import LIMIT
+        for strides in ((8, True), (0, LIMIT + 1), (0, 3), (0, -LIMIT-1)):
+            with self.subTest(strides=strides), self.assertRaises(LayoutError):
+                validate_view((0, 2), strides, 0, 32, 8)
+        self.assertEqual(validate_view((0, 2), (0, 8), 32, 32, 8),
+                         (32, 32))
+
+    def test_disjoint_adjacent_half_open_writers_are_legal(self):
+        b = BorrowBook()
+        b.register("tensor", 1)
+        a = b.borrow("tensor", 1, mutable=True, start=0, end=16)
+        c = b.borrow("tensor", 1, mutable=True, start=16, end=32)
+        with self.assertRaisesRegex(LayoutError, "overlapping mutable loan"):
+            b.borrow("tensor", 1, mutable=False, start=15, end=17)
+        b.release(a)
+        b.release(c)
+        b.drop_owner("tensor", 1)
+
+    def test_duplicate_readers_delay_mutable_writer_until_all_release(self):
+        b = BorrowBook()
+        b.register("tensor", 1)
+        a = b.borrow("tensor", 1, mutable=False, start=0, end=8)
+        c = b.borrow("tensor", 1, mutable=False, start=0, end=8)
+        with self.assertRaises(LayoutError):
+            b.borrow("tensor", 1, mutable=True, start=0, end=8)
+        b.release(a)
+        with self.assertRaises(LayoutError):
+            b.borrow("tensor", 1, mutable=True, start=0, end=8)
+        b.release(c)
+        writable = b.borrow("tensor", 1, mutable=True, start=0, end=8)
+        b.release(writable)
+        b.drop_owner("tensor", 1)
+
+    def test_cross_book_identical_lease_values_are_not_capabilities(self):
+        b1 = BorrowBook()
+        b2 = BorrowBook()
+        b1.register("tensor", 1)
+        b2.register("tensor", 1)
+        a = b1.borrow("tensor", 1, mutable=True, start=0, end=8)
+        c = b2.borrow("tensor", 1, mutable=True, start=0, end=8)
+        self.assertEqual(a.token, c.token)
+        with self.assertRaises(LayoutError):
+            b1.release(c)
+        with self.assertRaises(LayoutError):
+            b2.release(a)
+        b1.release(a)
+        b2.release(c)
+        b1.drop_owner("tensor", 1)
+        b2.drop_owner("tensor", 1)
+
+    def test_rejected_view_acquisition_does_not_consume_lease_token(self):
+        b = BorrowBook()
+        b.register("tensor", 1)
+        first = b.borrow("tensor", 1, mutable=False, start=0, end=8)
+        marker = b._next_token
+        with self.assertRaises(LayoutError):
+            b.borrow_view("tensor", 1, mutable=True,
+                          shape=(2, 2), strides_bytes=(8, 8),
+                          offset_bytes=0, storage_bytes=24, itemsize=8)
+        self.assertEqual(b._next_token, marker)
+        self.assertEqual(len(b._leases), 1)
+        b.release(first)
+        b.drop_owner("tensor", 1)
+
+
 if __name__ == "__main__":
     unittest.main()
