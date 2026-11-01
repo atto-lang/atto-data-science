@@ -55,6 +55,14 @@ required_matrix_cases=(
   matrix/zero-column-matvec
   matrix/short-matrix-preflight
   matrix/short-vector-preflight
+  matrix/rectangular-matvec
+  matrix/last-index
+  matrix/negative-row-read
+  matrix/zero-by-zero
+  matrix/zero-rows-matvec
+  matrix/short-output-preflight
+  matrix/zero-extent-extra-storage
+  matrix/negative-column-extent
 )
 for test_name in "${required_matrix_cases[@]}"; do
   marker_count="$(grep -Fxc "ORES_TEST|PASS|data-science/$test_name|" "$log" || true)"
