@@ -351,7 +351,7 @@ fnc test_matrix_zero_rows_matvec(): TestOutcome {
   if result.is_err(); do
     return fail("zero-row matvec must succeed with empty destination");
   fi
-  return expect_true(true, "zero-row matvec must not write an element");
+  return expect_true(!result.is_err(), "zero-row matvec must not write an element");
 }
 
 fnc test_matrix_short_output_preflight(): TestOutcome {
