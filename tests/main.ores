@@ -240,6 +240,61 @@ fnc test_matrix_bounds_and_negative_shape(): TestOutcome {
     "negative matrix extent must be rejected");
 }
 
+// Explicit empty-column matrix-vector multiplication must publish zeroes
+// into the owned destination, never leave stale prior row values.
+fnc test_matvec_zero_column_output(): TestOutcome {
+  val DenseMatrixF64 empty_columns = new DenseMatrixF64(2, 0, arr[]);
+  val List<float> vector = arr[];
+  val List<float> output = arr[91.0, 92.0];
+  val Result<List<float>, String> result = matvec_into(empty_columns, vector, output);
+  if result.is_err(); do
+    return fail("zero-column matrix-vector multiplication returned Err");
+  fi
+  val TestOutcome first = expect_near_float(output[0], 0.0, 0.000001,
+    "zero-column matvec must zero the first row");
+  if !first.passed; do
+    return first;
+  fi
+  return expect_near_float(output[1], 0.0, 0.000001,
+    "zero-column matvec must zero the second row");
+}
+
+fnc test_matvec_short_matrix_preflight(): TestOutcome {
+  val DenseMatrixF64 short = new DenseMatrixF64(2, 2, arr[1.0]);
+  val List<float> vector = arr[3.0, 4.0];
+  val List<float> output = arr[91.0, 92.0];
+  val Result<List<float>, String> result = matvec_into(short, vector, output);
+  if !result.is_err(); do
+    return fail("matvec accepted truncated matrix storage");
+  fi
+  val TestOutcome first = expect_near_float(output[0], 91.0, 0.000001,
+    "short matrix rejection must preserve first destination element");
+  if !first.passed; do
+    return first;
+  fi
+  return expect_near_float(output[1], 92.0, 0.000001,
+    "short matrix rejection must preserve second destination element");
+}
+
+fnc test_matvec_short_vector_preflight(): TestOutcome {
+  val DenseMatrixF64 matrix = new DenseMatrixF64(
+    2, 2, arr[1.0, 2.0, 3.0, 4.0]
+  );
+  val List<float> vector = arr[1.0];
+  val List<float> output = arr[91.0, 92.0];
+  val Result<List<float>, String> result = matvec_into(matrix, vector, output);
+  if !result.is_err(); do
+    return fail("matvec accepted truncated vector storage");
+  fi
+  val TestOutcome first = expect_near_float(output[0], 91.0, 0.000001,
+    "short vector rejection must preserve first destination element");
+  if !first.passed; do
+    return first;
+  fi
+  return expect_near_float(output[1], 92.0, 0.000001,
+    "short vector rejection must preserve second destination element");
+}
+
 fnc test_nullable_column_mean(): TestOutcome {
   val FloatColumn column = new FloatColumn(
     "x",
@@ -293,6 +348,9 @@ pub routine main(): void {
       new TestCase("matrix/overflow", test_matrix_shape_product_overflow, false, ""),
       new TestCase("matrix/zero-extent", test_matrix_zero_extent_shape, false, ""),
       new TestCase("matrix/bounds-and-negative", test_matrix_bounds_and_negative_shape, false, ""),
+      new TestCase("matrix/zero-column-matvec", test_matvec_zero_column_output, false, ""),
+      new TestCase("matrix/short-matrix-preflight", test_matvec_short_matrix_preflight, false, ""),
+      new TestCase("matrix/short-vector-preflight", test_matvec_short_vector_preflight, false, ""),
       new TestCase("columnar/nullable-mean", test_nullable_column_mean, false, ""),
       new TestCase("dop/particle-energy", test_particle_energy, false, "")
     ]
