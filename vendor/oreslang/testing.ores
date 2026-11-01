@@ -227,6 +227,11 @@ pub fnc run_suite(TestSuite suite, TestOptions options): RunSummary {
 }
 
 pub fnc require_success(RunSummary summary): void {
+  // Neither an empty suite nor a skipped/filtered-only suite proves execution.
+  if summary.passed + summary.failed == 0; do
+    val Result<bool, String> empty = Err("no Oreslang test cases executed");
+    empty.expect("native Oreslang test suite was empty or only skipped/filtered");
+  fi
   if summary.failed > 0; do
     val Result<bool, String> failure = Err("one or more Oreslang tests failed");
     failure.expect("native Oreslang test suite failed");
@@ -241,7 +246,9 @@ pub fnc check_int_cases(
   List<int> cases,
   IntProperty property
 ): TestOutcome {
+  let bool saw_case = false;
   for const value of cases do
+    saw_case = true;
     let TestOutcome outcome = property(value);
     if !outcome.passed; do
       if outcome.message == ""; do
@@ -252,5 +259,8 @@ pub fnc check_int_cases(
     fi
   done
 
+  if !saw_case; do
+    return fail("property has no cases: " + property_name);
+  fi
   return pass();
 }
