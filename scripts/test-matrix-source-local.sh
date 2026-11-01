@@ -43,9 +43,23 @@ if ! ORESLANG_BIN="$ORESLANG_BIN" "$root/scripts/test.sh" >"$log" 2>&1; then
   printf 'MATRIX_GUEST_FAILED: runner output in %s\n' "$log" >&2
   exit 1
 fi
-for test_name in matrix/short-storage matrix/valid-get matrix/overflow; do
-  grep -Fxq "ORES_TEST|PASS|data-science/$test_name|" "$log" \
-    || fail "missing exact guest PASS marker: $test_name (log $log)"
+# Every native matrix case must execute exactly once on this pinned tree.
+# Duplicate PASS markers cannot manufacture extra credit.
+required_matrix_cases=(
+  matrix/matvec
+  matrix/short-storage
+  matrix/valid-get
+  matrix/overflow
+  matrix/zero-extent
+  matrix/bounds-and-negative
+  matrix/zero-column-matvec
+  matrix/short-matrix-preflight
+  matrix/short-vector-preflight
+)
+for test_name in "${required_matrix_cases[@]}"; do
+  marker_count="$(grep -Fxc "ORES_TEST|PASS|data-science/$test_name|" "$log" || true)"
+  [[ "$marker_count" = 1 ]] \
+    || fail "expected exactly one guest PASS marker for $test_name; found $marker_count (log $log)"
 done
 grep -Eq '^ORES_TEST\|SUMMARY\|total=[0-9]+\|passed=[0-9]+\|failed=0\|' "$log" \
   || fail "missing fail-free test summary (log $log)"
