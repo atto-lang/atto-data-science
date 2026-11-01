@@ -1,0 +1,21 @@
+import class TestCase, TestSuite, TestOptions, TestOutcome, RunSummary from "std/testing";
+import fnc expect_true, expect_false, expect_equal_int, expect_equal_string, expect_near_float, run_suite, require_success, fail from "std/testing";
+import fnc abs, clamp from "../src/math/scalar";
+fnc abs_negative_is_positive(): TestOutcome {
+  return expect_near_float(abs(0.0 - 7.25), 7.25, 0.0,
+    "absolute value of a negative scalar must be positive");
+}
+fnc clamp_rejects_outside_value_by_saturation(): TestOutcome {
+  return expect_near_float(clamp(11.0, 0.0, 10.0), 10.0, 0.0,
+    "upper bound must be saturated exactly");
+}
+pub routine main(): void {
+  val TestSuite suite = new TestSuite("data-science", arr[
+    new TestCase("abs_negative_is_positive", abs_negative_is_positive, false, ""),
+    new TestCase("clamp_rejects_outside_value_by_saturation", clamp_rejects_outside_value_by_saturation, false, "")
+  ]);
+  val TestOptions options = new TestOptions("", false, true);
+  val RunSummary summary = run_suite(rt borrow suite, rt borrow options);
+  require_success(rt borrow summary);
+  return;
+}
