@@ -29,3 +29,4 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_matrix_overflow_contract.py' -v
           python3 -m unittest discover -s tests -p 'test_testing_module_exports.py' -v
           python3 -m unittest discover -s tests -p 'test_matrix_guest_gate.py' -v
+          python3 -m unittest discover -s tests -p 'test_matrix_matvec_reference.py' -v
