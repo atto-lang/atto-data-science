@@ -1,5 +1,5 @@
-import class TestCase, TestSuite, TestOptions, TestOutcome, RunSummary from "std/testing";
-import fnc expect_true, expect_false, expect_equal_int, expect_equal_string, expect_near_float, run_suite, require_success, fail from "std/testing";
+import class TestCase, TestSuite, TestOptions, TestOutcome, RunSummary from "ores.std/testing";
+import fnc expect_true, expect_false, expect_equal_int, expect_equal_string, expect_near_float, run_suite, require_success, fail from "ores.std/testing";
 import fnc abs, clamp from "../src/math/scalar";
 fnc abs_negative_is_positive(): TestOutcome {
   return expect_near_float(abs(0.0 - 7.25), 7.25, 0.0,
