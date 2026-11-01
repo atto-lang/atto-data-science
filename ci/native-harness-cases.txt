@@ -1,0 +1,6 @@
+data-science/extended/variance/singleton-rejected
+data-science/extended/min/empty-rejected
+data-science/extended/max/empty-rejected
+data-science/extended/vector/zero-norm-rejected
+data-science/extended/matrix/malformed-storage-rejected
+data-science/extended/harness/empty-property-rejected
