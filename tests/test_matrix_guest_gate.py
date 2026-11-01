@@ -68,6 +68,24 @@ class MatrixGuestGateTests(unittest.TestCase):
                       "source checkout modified during guest execution"):
             self.assertIn(check, source)
 
+    def test_native_gate_requires_every_matrix_fixture_exactly_once(self):
+        source = GATE.read_text(encoding="utf-8")
+        for case in (
+            "matrix/matvec",
+            "matrix/short-storage",
+            "matrix/valid-get",
+            "matrix/overflow",
+            "matrix/zero-extent",
+            "matrix/bounds-and-negative",
+            "matrix/zero-column-matvec",
+            "matrix/short-matrix-preflight",
+            "matrix/short-vector-preflight",
+        ):
+            with self.subTest(case=case):
+                self.assertIn("  " + case + "\n", source)
+        self.assertIn('grep -Fxc "ORES_TEST|PASS|data-science/$test_name|"', source)
+        self.assertIn('[[ "$marker_count" = 1 ]]', source)
+
     def test_no_source_export_or_test_double_is_in_gate(self):
         source = GATE.read_text(encoding="utf-8")
         for required in ("git -C", "HEAD^{tree}", "sha256sum",
