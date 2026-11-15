@@ -16,8 +16,14 @@ class Moments:
     m2: float = 0.0
 
     def add(self, value):
-        if type(value) not in (int, float) or not math.isfinite(value):
+        if type(value) not in (int, float):
             raise MomentsError("sample must be a finite number, not a boolean")
+        try:
+            value = float(value)
+        except (OverflowError, ValueError) as exc:
+            raise MomentsError("numeric input is not representable as float") from exc
+        if not math.isfinite(value):
+            raise MomentsError("sample must be finite")
         if self.count >= MAX_SAMPLES:
             raise MomentsError("sample budget exceeded")
         n = self.count + 1
