@@ -1,0 +1,58 @@
+// Compiled guest acceptance fixture: supervised nullable data -> row-indexed
+// dense minibatch. No JS oracle result can substitute for executing this.
+import class FloatColumn from '../src/data/columnar';
+import class DenseSupervisedBatchF64 from '../src/pipeline/ml_batch_bridge';
+import fnc compact_supervised_f64_into from '../src/pipeline/ml_batch_bridge';
+
+pub routine main(): void {
+  val FloatColumn features = new FloatColumn(
+    "feature", arr[1.0, 999.0, 3.0, 4.0],
+    arr[true, false, true, true]
+  );
+  val FloatColumn targets = new FloatColumn(
+    "target", arr[3.0, 5.0, 7.0, 9.0],
+    arr[true, true, false, true]
+  );
+  val List<float> values = arr[0.0, 0.0, 0.0, 0.0];
+  val List<float> labels = arr[0.0, 0.0, 0.0, 0.0];
+  val List<int> source_rows = arr[0, 0, 0, 0];
+  val Result<DenseSupervisedBatchF64, String> result =
+    compact_supervised_f64_into(features, targets, values, labels, source_rows);
+  if result.is_err(); do
+    stdio.println("ORES_SUPERVISED_ML_BATCH_FAIL result");
+    return;
+  fi
+  val DenseSupervisedBatchF64 batch = result.unwrap();
+  if batch.count != 2; do
+    stdio.println("ORES_SUPERVISED_ML_BATCH_FAIL count");
+    return;
+  fi
+  if values[0] != 1.0 || values[1] != 4.0
+      || labels[0] != 3.0 || labels[1] != 9.0
+      || source_rows[0] != 0 || source_rows[1] != 3; do
+    stdio.println("ORES_SUPERVISED_ML_BATCH_FAIL alignment");
+    return;
+  fi
+  if values[2] != 0.0 || labels[2] != 0.0 || source_rows[2] != 0; do
+    stdio.println("ORES_SUPERVISED_ML_BATCH_FAIL tail");
+    return;
+  fi
+  val List<float> too_small_features = arr[100.0];
+  val List<float> too_small_targets = arr[200.0];
+  val List<int> too_small_rows = arr[300];
+  val Result<DenseSupervisedBatchF64, String> short_result =
+    compact_supervised_f64_into(
+      features, targets, too_small_features, too_small_targets, too_small_rows
+    );
+  if !short_result.is_err(); do
+    stdio.println("ORES_SUPERVISED_ML_BATCH_FAIL capacity");
+    return;
+  fi
+  if too_small_features[0] != 100.0 || too_small_targets[0] != 200.0
+      || too_small_rows[0] != 300; do
+    stdio.println("ORES_SUPERVISED_ML_BATCH_FAIL failure-atomicity");
+    return;
+  fi
+  stdio.println("ORES_SUPERVISED_ML_BATCH_PASS");
+  return;
+}
