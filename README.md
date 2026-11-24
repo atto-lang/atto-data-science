@@ -43,3 +43,9 @@ This describes the repository's intended purpose, not a verified list of impleme
 AttoLang is the canonical project name; new source, examples and documentation use `.atto` and the `atto-lang` repository organization. This README defines scope, not feature readiness.
 
 **Acceptance:** name exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
+
+## Online statistics reference (host-only)
+
+`reference/moments.py` implements immutable incremental Welford mean/population and sample variance, plus deterministic pairwise summary merging for partitioned data. It rejects nonfinite/boolean samples, arithmetic overflow and unsupported sample counts. Run `python3 -m unittest discover -s tests -v` to exercise simple, partitioned and invalid-input cases.
+
+This is a Python numerical reference, **not** an AttoLang guest implementation. Floating-point reduction ordering can change results; future backend conformance needs explicitly pinned numeric precision, sample order, tolerances and actual target execution receipts.
