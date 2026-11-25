@@ -118,8 +118,9 @@ class BorrowBook:
         self._next_token = 0
 
     def register(self, owner, generation):
-        if type(owner) is not str or not owner or type(generation) is not int or generation < 1:
+        if type(owner) is not str or not owner:
             raise LayoutError("invalid owner generation")
+        _bounded_int(generation, 1, LIMIT, "owner generation")
         if owner in self._generations:
             raise LayoutError("owner already registered")
         if generation <= self._last_generation.get(owner, 0):
@@ -139,6 +140,10 @@ class BorrowBook:
                     and max(start, held.start) < min(end, held.end)
                     and (held.mutable or mutable)):
                 raise LayoutError("overlapping mutable loan")
+        # A native u64/i64-sized lease counter must never wrap and reuse an
+        # authorization token. Refuse admission without publishing a loan.
+        if self._next_token >= LIMIT:
+            raise LayoutError("borrow token exhausted")
         self._next_token += 1
         candidate = Lease(owner, generation, mutable, start, end, self._next_token)
         self._leases.add(candidate)
